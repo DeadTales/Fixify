@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from src.config.settings import settings
-from src.database.conexion import get_db, engine, Base  # Agregamos engine y Base
+from src.database.conexion import get_db, engine, Base 
 from src.modules.auth.router import router as auth_router
 # IMPORTANTE: Importa tu modelo de usuario aquí para que SQLAlchemy lo detecte y cree la tabla
 from src.modules.users.model import User 

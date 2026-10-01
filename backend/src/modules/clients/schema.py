@@ -21,3 +21,5 @@ class ClientResponse(BaseModel):
 
     class Config:
         from_attributes = True
+class ClientMessageResponse(BaseModel):
+    mensaje: str

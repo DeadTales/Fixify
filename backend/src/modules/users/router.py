@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from src.database.conexion import get_db
-from src.shared.security import verificar_rol_admin
+from src.modules.auth.dependencies import verificar_rol_admin
 from src.modules.users.repository import user_repository
 # Asumiendo que tienes tus esquemas Pydantic en schemas.py
 from src.modules.users.schema import UserCreate, UserUpdateRole
