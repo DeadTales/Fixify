@@ -1,0 +1,43 @@
+# Documentación Técnica: Backend Fixify
+
+Esta documentación describe la arquitectura base, los comandos de ejecución y la configuración de persistencia de datos del backend del sistema de gestión de taller de reparaciones "Fixify", desarrollado con FastAPI, SQLAlchemy y PostgreSQL.
+
+## 1. Estructura del Proyecto
+
+El proyecto sigue una arquitectura modular diseñada para escalar y separar responsabilidades claramente. El código fuente principal reside dentro del directorio `src/`.
+
+*   **`main.py`**: Punto de entrada principal de la aplicación. Inicializa la instancia de FastAPI y configura parámetros dinámicos según el entorno (ej. visibilidad de la documentación interactiva).
+*   **`.env`**: Archivo local de variables de entorno (ignorado en control de versiones). Almacena credenciales sensibles y define el entorno de ejecución (`ENVIRONMENT=development`).
+*   **`src/config/`**: Contiene `settings.py`, que utiliza `pydantic-settings` para centralizar, validar y exponer las variables de entorno de forma tipada al resto de la aplicación.
+*   **`src/database/`**: Contiene `conexion.py`, responsable de instanciar el motor de base de datos de SQLAlchemy y proporcionar la fábrica de sesiones (`SessionLocal`) mediante inyección de dependencias.
+*   **`src/shared/`**: Aloja las clases genéricas base para estandarizar el desarrollo de nuevos módulos:
+    *   `base_repository.py`: Clase genérica con operaciones CRUD predefinidas hacia la base de datos.
+    *   `base_schema.py`: Modelo base de Pydantic configurado (`from_attributes=True`) para serializar automáticamente objetos de SQLAlchemy a JSON.
+*   **`src/api/`, `src/modules/`, `src/services/`**: Directorios preparados para la futura integración de enrutadores, lógica de negocio y servicios externos.
+
+## 2. Ejecución del Backend
+
+El servidor se ejecuta utilizando Uvicorn, un servidor ASGI de alto rendimiento. Para levantar el entorno de desarrollo local, se deben seguir estos pasos:
+
+1.  Asegurar que el entorno virtual esté activado y las dependencias de `requirements.txt` estén instaladas.
+2.  Verificar que el archivo `.env` exista en la raíz del proyecto.
+3.  Ejecutar el siguiente comando en la terminal desde la raíz del proyecto:
+
+    ```bash
+    uvicorn main:app --reload
+    ```
+
+**Rutas de acceso local:**
+*   **API Root:** `http://127.0.0.1:8000/`
+*   **Documentación Swagger UI:** `http://127.0.0.1:8000/docs` (Solo disponible si `ENVIRONMENT=development`).
+*   **Cierre del servidor:** Presionar `Ctrl + C` en la terminal.
+
+## 3. Configuración de Conexión a PostgreSQL
+
+La persistencia de datos se gestiona mediante SQLAlchemy, utilizando un enfoque de configuración basado en el entorno para garantizar una transición segura entre desarrollo local y producción en la nube.
+
+**Flujo de Configuración:**
+1.  **Definición de Credenciales:** La cadena de conexión a PostgreSQL se define en el archivo `.env` bajo la variable `DATABASE_URL` (ej. `postgresql://usuario:password@host:5432/bd`).
+2.  **Validación:** El módulo `src/config/settings.py` lee y valida automáticamente esta variable al iniciar la aplicación.
+3.  **Conexión:** El módulo `src/database/conexion.py` importa la variable ya validada (`settings.DATABASE_URL`) y construye el `engine` de SQLAlchemy.
+4.  **Gestión de Sesiones:** Se utiliza la función generadora `get_db()` para proporcionar una sesión de base de datos aislada a cada petición HTTP de FastAPI, asegurando que las conexiones se abran y cierren correctamente de forma automática para evitar fugas de memoria.
