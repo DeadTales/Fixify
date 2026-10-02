@@ -38,6 +38,7 @@ def available_views(role):
                 and role in getattr(cls, 'allowed_roles', ())
             ):
                 views.append(cls)
+                
 
     views.sort(key=lambda cls: (getattr(cls, 'menu_order', 100), cls.menu_label))
     return [(cls.menu_label, cls) for cls in views]
