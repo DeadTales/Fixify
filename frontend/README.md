@@ -12,7 +12,7 @@ Requiere Python con Tkinter. `asyncio` pertenece a la biblioteca estándar: no s
 - `services/api_client.py`: HTTP, token y errores comunes.
 - `services/*_service.py`: rutas y datos de cada módulo.
 - `app/async_runner.py`: solicitudes en asyncio; callbacks de widgets en Tk.
-- `ui/components.py`: tabla, formulario y vista de colección reutilizables.
+- `ui/components/`: componentes reutilizables separados en `field.py`, `async_frame.py`, `table.py`, `form_dialog.py` y `collection_view.py`. `__init__.py` conserva los imports comunes.
 - `ui/views/`: dashboard, clientes, equipos y usuarios.
 - `ui/sistema_gestion.py`: navegación según rol.
 - `models/`: contratos Pydantic de sesión, clientes, equipos y usuarios.
