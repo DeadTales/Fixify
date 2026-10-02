@@ -8,25 +8,43 @@ class FormDialog(ttk.Toplevel):
     def __init__(self, master, title, fields, runner, save, on_saved):
         """master: vista; title: título; fields: campos; runner: tareas; save/on_saved: guardar/confirmar."""
         super().__init__(master)
+
         self.runner, self.save, self.on_saved = runner, save, on_saved
         self.fields, self.inputs = fields, {}
         self.title(title)
         self.resizable(False, False)
+
         body = ttk.Frame(self, padding=20)
         body.pack(fill='both', expand=True)
         ttk.Label(body, text=title, font=('Arial', 14, 'bold')).pack(pady=(0, 15))
+
         for field in fields:
             ttk.Label(body, text=field.label).pack(anchor='w', pady=(5, 0))
+
             if field.choices:
-                widget = ttk.Combobox(body, values=field.choices, state='readonly', width=38)
+                widget = ttk.Combobox(
+                    body,
+                    values=field.choices,
+                    state='readonly',
+                    width=38,
+                )
                 widget.current(0)
             else:
                 widget = ttk.Entry(body, width=40, show='*' if field.secret else '')
+
             widget.pack(fill='x', pady=5)
+
             self.inputs[field.name] = widget
+
         self.status = ttk.Label(body, text='', wraplength=350)
         self.status.pack(fill='x', pady=5)
-        self.button = ttk.Button(body, text='Guardar', bootstyle='success', command=self._submit)
+
+        self.button = ttk.Button(
+            body,
+            text='Guardar',
+            bootstyle='success',
+            command=self._submit,
+        )
         self.button.pack(pady=(10, 0))
         self.transient(master.winfo_toplevel())
         self.protocol('WM_DELETE_WINDOW', self.destroy)
@@ -35,12 +53,28 @@ class FormDialog(ttk.Toplevel):
 
     def _submit(self):
         """Lee controles en Tk; conserva espacios de contraseñas y evita doble envío."""
-        values = {f.name: self.inputs[f.name].get() if f.secret
-                  else self.inputs[f.name].get().strip() for f in self.fields}
-        missing = [f.label for f in self.fields if f.required and not values[f.name]]
+
+        # Las claves Field.name deben coincidir con los argumentos del service.
+        # Entry entrega texto: convertir IDs explícitamente antes del service;
+        # Contrato usa tipos estrictos y no convierte strings a enteros.
+        values = {
+            field.name: (
+                self.inputs[field.name].get()
+                if field.secret
+                else self.inputs[field.name].get().strip()
+            )
+            for field in self.fields
+        }
+        missing = [
+            field.label
+            for field in self.fields
+            if field.required and not values[field.name]
+        ]
+
         if missing:
             self.status.configure(text='Complete: ' + ', '.join(missing))
             return
+
         self.button.configure(state='disabled')
         self.status.configure(text='Guardando…')
         self.runner.submit(self.save(values), self, self._saved, self._failed)

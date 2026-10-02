@@ -13,6 +13,7 @@ class VentanaLogin(ttk.Window):
         super().__init__(title='Fixify — Iniciar sesión', themename='litera', size=(450, 460))
         self.geometry('450x540')
         set_window_icon(self)
+
         self.services = services if services is not None else Services()
         self.runner = AsyncRunner(self)
         self._closing = False
@@ -23,20 +24,30 @@ class VentanaLogin(ttk.Window):
 
     def crear_widgets(self):
         """Construye campos con etiquetas estables y feedback de conexión."""
+
         body = ttk.Frame(self, padding=35)
         body.pack(fill='both', expand=True)
+
         # Tk requiere una referencia a la imagen mientras el widget esté visible.
         self.logo = load_logo(self, (140, 140))
         ttk.Label(body, image=self.logo).pack(pady=(0, 20))
         ttk.Label(body, text='Usuario').pack(anchor='w')
+
         self.entry_usuario = ttk.Entry(body)
         self.entry_usuario.pack(fill='x', pady=(5, 15))
         ttk.Label(body, text='Contraseña').pack(anchor='w')
+
         self.entry_password = ttk.Entry(body, show='*')
         self.entry_password.pack(fill='x', pady=5)
+
         self.status = ttk.Label(body, text='', wraplength=370)
         self.status.pack(fill='x', pady=10)
-        self.button = ttk.Button(body, text='Iniciar sesión', command=self.verificar_login)
+
+        self.button = ttk.Button(
+            body,
+            text='Iniciar sesión',
+            command=self.verificar_login,
+        )
         self.button.pack(fill='x', pady=10)
         ttk.Button(body, text='¿Olvidaste tu contraseña?', bootstyle='link',
                    command=self.mostrar_recuperacion).pack()
@@ -44,13 +55,17 @@ class VentanaLogin(ttk.Window):
 
     def verificar_login(self):
         """Valida presencia; preserva contraseña y evita solicitudes repetidas."""
+
         if self._closing or str(self.button['state']) == 'disabled':
             return
+
         username = self.entry_usuario.get().strip()
         password = self.entry_password.get()
+
         if not username or not password:
             self.status.configure(text='Complete usuario y contraseña.')
             return
+
         self.button.configure(state='disabled')
         self.status.configure(text='Conectando…')
         self.runner.submit(self.services.auth.login(username, password), self,
@@ -74,12 +89,18 @@ class VentanaLogin(ttk.Window):
     def mostrar_recuperacion(self):
         """Informa el procedimiento actual; no existe recuperación automática."""
         from tkinter import messagebox
-        messagebox.showinfo('Recuperar cuenta', 'Contacte al administrador para restablecer su cuenta.', parent=self)
+        messagebox.showinfo(
+            'Recuperar cuenta',
+            'Contacte al administrador para restablecer su cuenta.',
+            parent=self,
+        )
 
     def cerrar_aplicacion(self):
         """Cancela tareas y cierra HTTP antes de destruir la ventana principal."""
+
         if self._closing:
             return
+
         self._closing = True
         self.services.api.set_token(None)
         self.button.configure(state='disabled')

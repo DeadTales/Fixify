@@ -5,7 +5,13 @@ from models.clients import Cliente
 
 class ClientsView(CollectionView):
     """Configura clientes reutilizando la vista común de colección."""
+    # Plantilla de módulo: campos -> save -> service -> contrato de respuesta.
+    # row solo adapta presentación; no realiza consultas ni valida la API.
     title = 'Directorio de Clientes'
+    menu_label = 'Clientes'
+    allowed_roles = ('admin', 'recepcion')
+    menu_order = 20
+    service_name = 'clients'
     columns = ('ID', 'Nombre', 'Teléfono', 'Correo', 'Dirección')
     fields = (Field('nombre', 'Nombre completo'), Field('telefono', 'Teléfono'),
               Field('correo', 'Correo (opcional)', required=False),

@@ -12,11 +12,13 @@ class ClientsService(ModuleService):
 
     async def crear(self, nombre, telefono, correo=None, direccion=None) -> ClienteRegistrado:
         """nombre/telefono: obligatorios; correo/direccion: datos opcionales."""
+
         entrada = self._parse(ClienteCrear, {
             'nombre': nombre, 'telefono': telefono,
             'correo': correo or None, 'direccion': direccion or None,
         }, entrada=True)
         data = await self.api.request('POST', '/clientes/', json=entrada.model_dump())
+
         return self._parse(ClienteRegistrado, data)
 
     async def buscar(self, termino) -> list[Cliente]:
