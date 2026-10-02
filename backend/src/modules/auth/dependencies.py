@@ -6,6 +6,7 @@ from src.config.settings import settings
 # Le indica a FastAPI de dónde viene el token
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 def verificar_usuario_autenticado(token: str = Depends(oauth2_scheme)):
+    """token: Bearer JWT; valida firma/expiración sin consultar estado actual en BD."""
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         return payload
@@ -16,6 +17,7 @@ def verificar_usuario_autenticado(token: str = Depends(oauth2_scheme)):
         )
 
 def verificar_rol_admin(token: str = Depends(oauth2_scheme)):
+    """token: JWT firmado; exige el rol admin almacenado al iniciar sesión."""
     try:
         # Abrimos el gafete (token) para leer su contenido
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])

@@ -1,10 +1,11 @@
+# Punto de entrada FastAPI: registra rutas y modelos sin modificar el esquema SQL.
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from src.config.settings import settings
 from src.database.conexion import get_db, engine, Base 
 from src.modules.auth.router import router as auth_router
-# IMPORTANTE: Importa tu modelo de usuario aquí para que SQLAlchemy lo detecte y cree la tabla
+# Registra el modelo de usuario en los metadatos compartidos.
 from src.modules.users.model import User 
 from src.modules.users.router import router as users_router
 from src.modules.clients.router import router as clients_router
@@ -12,9 +13,8 @@ from src.modules.equipment.router import router as equipment_router
 
 
 
-# --- CREACIÓN DE TABLAS EN SUPABASE ---
-# Esta línea le dice a PostgreSQL que cree las tablas si no existen
-Base.metadata.create_all(bind=engine)
+# Registra entidades de mantenimiento; no crea tablas ni migra al importar.
+from src.database import domain_models
 
 # --- CONFIGURACIÓN DE LA APLICACIÓN ---
 app = FastAPI(
@@ -34,6 +34,7 @@ app.include_router(equipment_router)
 # --- ENDPOINTS GLOBALES ---
 @app.get("/")
 def root():
+    """Devuelve información general de la API, sin consultar la base de datos."""
     return {
         "status": "success", 
         "environment": settings.ENVIRONMENT,
@@ -42,6 +43,7 @@ def root():
 
 @app.get("/health", tags=["Status"])
 def health_check(db: Session = Depends(get_db)):
+    """db: sesión inyectada; verifica conectividad con SELECT 1, no todo el esquema."""
     try:
         # Intentamos ejecutar la consulta más básica en SQL
         db.execute(text("SELECT 1"))

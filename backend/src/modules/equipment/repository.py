@@ -5,9 +5,15 @@ from src.modules.equipment.schema import EquipmentCreate
 from src.modules.clients.model import Client
 
 class EquipmentRepository:
+    def get_all(self, db: Session):
+        """db: sesión actual; devuelve los equipos ordenados por identificador."""
+        return db.query(Equipment).order_by(Equipment.id).all()
+
     def create(self, db: Session, eq_in: EquipmentCreate):
+        """db: sesión actual; eq_in: datos validados del equipo y su propietario."""
         # 1. Validar que el cliente dueno realmente exista
-        client = db.query(Client).filter(Client.id == eq_in.client_id).first()
+        # Solo necesitamos el ID; no consultamos otros datos del cliente.
+        client = db.query(Client.id).filter(Client.id == eq_in.client_id).first()
         if not client:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

@@ -8,19 +8,19 @@ USE fixify;
 -- ==========================================
 
 CREATE TABLE clientes (
-    id_cliente INT AUTO_INCREMENT PRIMARY KEY,
+    id_cliente SERIAL PRIMARY KEY,
     nombre VARCHAR(150) NOT NULL,
     telefono VARCHAR(20),
     correo VARCHAR(100)
 );
 
 CREATE TABLE roles (
-    id_rol INT AUTO_INCREMENT PRIMARY KEY,
+    id_rol SERIAL PRIMARY KEY,
     nombre_rol VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE materiales (
-    id_material INT AUTO_INCREMENT PRIMARY KEY,
+    id_material SERIAL PRIMARY KEY,
     descripcion VARCHAR(200) NOT NULL,
     existencia_actual INT DEFAULT 0,
     stock_minimo INT DEFAULT 0
@@ -31,16 +31,17 @@ CREATE TABLE materiales (
 -- ==========================================
 
 CREATE TABLE usuarios (
-    id_usuario INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario SERIAL PRIMARY KEY,
     id_rol INT,
     nombre VARCHAR(150) NOT NULL,
     correo VARCHAR(100) UNIQUE,
     contrasena_hash VARCHAR(255) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     FOREIGN KEY (id_rol) REFERENCES roles(id_rol)
 );
 
 CREATE TABLE equipos (
-    id_equipo INT AUTO_INCREMENT PRIMARY KEY,
+    id_equipo SERIAL PRIMARY KEY,
     id_cliente INT NOT NULL,
     tipo VARCHAR(50),
     marca VARCHAR(50),
@@ -55,7 +56,7 @@ CREATE TABLE equipos (
 -- ==========================================
 
 CREATE TABLE ordenes_servicio (
-    id_orden INT AUTO_INCREMENT PRIMARY KEY,
+    id_orden SERIAL PRIMARY KEY,
     folio VARCHAR(50) UNIQUE NOT NULL,
     id_equipo INT NOT NULL,
     id_cliente INT NOT NULL,
@@ -73,7 +74,7 @@ CREATE TABLE ordenes_servicio (
 -- ==========================================
 
 CREATE TABLE diagnosticos (
-    id_diagnostico INT AUTO_INCREMENT PRIMARY KEY,
+    id_diagnostico SERIAL PRIMARY KEY,
     id_orden INT NOT NULL,
     descripcion TEXT NOT NULL,
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -81,7 +82,7 @@ CREATE TABLE diagnosticos (
 );
 
 CREATE TABLE actividades_reparacion (
-    id_actividad INT AUTO_INCREMENT PRIMARY KEY,
+    id_actividad SERIAL PRIMARY KEY,
     id_orden INT NOT NULL,
     trabajo_realizado TEXT NOT NULL,
     solucion TEXT,
@@ -90,7 +91,7 @@ CREATE TABLE actividades_reparacion (
 );
 
 CREATE TABLE consumos_material (
-    id_consumo INT AUTO_INCREMENT PRIMARY KEY,
+    id_consumo SERIAL PRIMARY KEY,
     id_orden INT NOT NULL,
     id_material INT NOT NULL,
     cantidad_utilizada INT NOT NULL,
@@ -99,7 +100,7 @@ CREATE TABLE consumos_material (
 );
 
 CREATE TABLE historial_estados (
-    id_historial INT AUTO_INCREMENT PRIMARY KEY,
+    id_historial SERIAL PRIMARY KEY,
     id_orden INT NOT NULL,
     id_usuario INT NOT NULL,
     estado_anterior VARCHAR(50),

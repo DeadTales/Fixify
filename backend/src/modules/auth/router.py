@@ -10,6 +10,7 @@ router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
 @router.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    """form_data: usuario/correo y contraseña; db: sesión para verificar cuenta y rol."""
     # 1. Buscar al usuario en Supabase por su nombre de usuario
     user = user_repository.get_by_username(db, username=form_data.username)
     
@@ -20,16 +21,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             detail="Usuario o contraseña incorrectos",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    # 1. Buscar al usuario
-    user = user_repository.get_by_username(db, username=form_data.username)
-    
-    # 2. Validar que exista y la contraseña coincida
-    if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
-        
-    # 3. EL NUEVO CANDADO: Verificar si la cuenta está habilitada
+    # Rechaza cuentas desactivadas antes de emitir una sesión.
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Cuenta deshabilitada. Contacte al administrador.")
+    if user.role not in ('admin', 'tecnico', 'recepcion'):
+        raise HTTPException(status_code=403, detail='La cuenta no tiene un rol autorizado.')
     # 3. Si es correcto, generar el token JWT incluyendo su rol
     access_token = create_access_token(data={"sub": user.username, "role": user.role})
     

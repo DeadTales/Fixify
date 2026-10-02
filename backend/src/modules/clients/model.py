@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text
+from sqlalchemy import Column, Integer, String
 from src.database.conexion import Base
 
 class Client(Base):
@@ -8,9 +8,12 @@ class Client(Base):
     id = Column("id_cliente", Integer, primary_key=True, index=True, autoincrement=True)
     
     # --- DATOS OBLIGATORIOS (nullable=False) ---
-    nombre = Column(String(100), nullable=False)
-    telefono = Column(String(20), nullable=False) # Obligatorio para contactar al taller
+    nombre = Column(String(150), nullable=False)
+    telefono = Column(String(20), nullable=True)
     
     # --- DATOS OPCIONALES (nullable=True) ---
     correo = Column(String(100), nullable=True)     # No todos los clientes usan correo
-    direccion = Column(Text, nullable=True)         # Opcional
+    @property
+    def direccion(self):
+        """Compatibilidad API: el SQL base no define dirección persistida."""
+        return None

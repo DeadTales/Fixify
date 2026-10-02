@@ -14,6 +14,7 @@ class EquipmentResponse(BaseModel):
     tipo: str
     marca: str
     modelo: str
+    numero_serie: Optional[str] = None
     problema_reportado: str
     client_id: int
 

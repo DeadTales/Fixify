@@ -1,43 +1,43 @@
-# Documentación Técnica: Backend Fixify
+# Backend de Fixify
 
-Esta documentación describe la arquitectura base, los comandos de ejecución y la configuración de persistencia de datos del backend del sistema de gestión de taller de reparaciones "Fixify", desarrollado con FastAPI, SQLAlchemy y PostgreSQL.
+API con FastAPI, SQLAlchemy y PostgreSQL en Supabase. La documentación detallada, con contratos, flujo de autenticación y explicaci?n del código, está en [Documentacion_backend.ipynb](../docs/Documentacion_backend.ipynb).
 
-## 1. Estructura del Proyecto
+## Ejecutar
 
-El proyecto sigue una arquitectura modular diseñada para escalar y separar responsabilidades claramente. El código fuente principal reside dentro del directorio `src/`.
+Desde la carpeta `backend`, activa el entorno virtual e instala `requirements.txt`. Configura `DataBase.env` con `DATABASE_URL` y `SECRET_KEY`; `ENVIRONMENT=development` habilita Swagger y ReDoc. El archivo de configuración se busca respecto al directorio de ejecución.
 
-*   **`main.py`**: Punto de entrada principal de la aplicación. Inicializa la instancia de FastAPI y configura parámetros dinámicos según el entorno (ej. visibilidad de la documentación interactiva).
-*   **`.env`**: Archivo local de variables de entorno (ignorado en control de versiones). Almacena credenciales sensibles y define el entorno de ejecución (`ENVIRONMENT=development`).
-*   **`src/config/`**: Contiene `settings.py`, que utiliza `pydantic-settings` para centralizar, validar y exponer las variables de entorno de forma tipada al resto de la aplicación.
-*   **`src/database/`**: Contiene `conexion.py`, responsable de instanciar el motor de base de datos de SQLAlchemy y proporcionar la fábrica de sesiones (`SessionLocal`) mediante inyección de dependencias.
-*   **`src/shared/`**: Aloja las clases genéricas base para estandarizar el desarrollo de nuevos módulos:
-    *   `base_repository.py`: Clase genérica con operaciones CRUD predefinidas hacia la base de datos.
-    *   `base_schema.py`: Modelo base de Pydantic configurado (`from_attributes=True`) para serializar automáticamente objetos de SQLAlchemy a JSON.
-*   **`src/api/`, `src/modules/`, `src/services/`**: Directorios preparados para la futura integración de enrutadores, lógica de negocio y servicios externos.
+```powershell
+python -m pip install -r requirements.txt
+python -m uvicorn main:app --reload
+```
 
-## 2. Ejecución del Backend
+API: http://127.0.0.1:8000/. Swagger: http://127.0.0.1:8000/docs. `/health` verifica conectividad mediante `SELECT 1`.
 
-El servidor se ejecuta utilizando Uvicorn, un servidor ASGI de alto rendimiento. Para levantar el entorno de desarrollo local, se deben seguir estos pasos:
+## Organizaci?n
 
-1.  Asegurar que el entorno virtual esté activado y las dependencias de `requirements.txt` estén instaladas.
-2.  Verificar que el archivo `.env` exista en la raíz del proyecto.
-3.  Ejecutar el siguiente comando en la terminal desde la raíz del proyecto:
+- `src/config/settings.py`: carga y valida la configuración.
+- `src/database/conexion.py`: motor SQLAlchemy y sesiones por petición.
+- `src/modules/`: autenticación, usuarios, roles, clientes y equipos; separa modelos, contratos Pydantic, repositorios y rutas.
+- `src/shared/security.py`: hashes bcrypt y emisi?n de JWT.
+- `src/database/domain_models.py`: modelos de materiales, ?rdenes, diagn?sticos, actividades, consumos e historial; todavía no tienen rutas.
+- `tests/`: pruebas de equipos y del contrato con el SQL local.
 
-    ```bash
-    uvicorn main:app --reload
-    ```
+## Base de datos y autenticación
 
-**Rutas de acceso local:**
-*   **API Root:** `http://127.0.0.1:8000/`
-*   **Documentación Swagger UI:** `http://127.0.0.1:8000/docs` (Solo disponible si `ENVIRONMENT=development`).
-*   **Cierre del servidor:** Presionar `Ctrl + C` en la terminal.
+Los modelos respetan los nombres físicos del SQL local. Los atributos de la API conservan sus alias, por ejemplo `User.username` representa `usuarios.nombre`. El estado de la cuenta se guarda en `usuarios.is_active`; el rol se obtiene del catálogo `roles`.
 
-## 3. Configuración de Conexión a PostgreSQL
+El login acepta nombre o correo, verifica bcrypt y rechaza cuentas inactivas. El JWT dura ocho horas. Los permisos usan el rol incluido en el token; desactivar una cuenta no revoca autom?ticamente los tokens ya emitidos.
 
-La persistencia de datos se gestiona mediante SQLAlchemy, utilizando un enfoque de configuración basado en el entorno para garantizar una transición segura entre desarrollo local y producción en la nube.
+El arranque registra modelos y rutas, sin crear tablas. La migración de equipos y las diferencias verificadas con Supabase están descritas en [ALINEACION_BASE_DATOS.md](../docs/ALINEACION_BASE_DATOS.md). El SQL base incluye eliminaci?n y creación de la base: no debe usarse como migración sobre una base existente.
 
-**Flujo de Configuración:**
-1.  **Definición de Credenciales:** La cadena de conexión a PostgreSQL se define en el archivo `.env` bajo la variable `DATABASE_URL` (ej. `postgresql://usuario:password@host:5432/bd`).
-2.  **Validación:** El módulo `src/config/settings.py` lee y valida automáticamente esta variable al iniciar la aplicación.
-3.  **Conexión:** El módulo `src/database/conexion.py` importa la variable ya validada (`settings.DATABASE_URL`) y construye el `engine` de SQLAlchemy.
-4.  **Gestión de Sesiones:** Se utiliza la función generadora `get_db()` para proporcionar una sesión de base de datos aislada a cada petición HTTP de FastAPI, asegurando que las conexiones se abran y cierren correctamente de forma automática para evitar fugas de memoria.
+`scripts/crear_usuario_prueba.py` prepara el usuario de prueba y puede modificar Supabase. Consulta el notebook antes de ejecutarlo. Las credenciales de conexión y `usuario_prueba.local.json` deben permanecer fuera del control de versiones.
+
+## Pruebas locales
+
+Desde la raíz del repositorio:
+
+```powershell
+python -m unittest discover -s backend/tests -p "test_*.py"
+```
+
+Las ocho pruebas usan SQLite y peticiones ASGI locales. Verifican el contrato SQL, equipos, hashes, login y activaci?n; no prueban la conexión remota a Supabase.

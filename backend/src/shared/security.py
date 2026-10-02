@@ -1,25 +1,31 @@
 from datetime import datetime, timedelta
-from passlib.context import CryptContext
+import bcrypt
 import jwt
 from src.config.settings import settings
+from fastapi import HTTPException
 
-# Motor para encriptar contraseñas usando el algoritmo bcrypt
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# bcrypt genera hashes unidireccionales; las contraseñas no se cifran de forma reversible.
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Compara la contraseña en texto plano del frontend con la encriptada en PostgreSQL."""
-    return pwd_context.verify(plain_password, hashed_password)
+    """plain_password: contraseña recibida; hashed_password: hash bcrypt almacenado."""
+    try:
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except ValueError:
+        return False
 
 def get_password_hash(password: str) -> str:
-    """Convierte una contraseña a su versión encriptada para guardarla en la BD."""
-    return pwd_context.hash(password)
+    """password: contraseña a convertir en hash; máximo 72 bytes en UTF-8."""
+    if len(password.encode('utf-8')) > 72:
+        raise HTTPException(status_code=422, detail='La contraseña excede el límite de 72 bytes de bcrypt.')
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 def create_access_token(data: dict) -> str:
-    """Genera el gafete digital (JWT) con una vigencia de 8 horas."""
+    """data: claims de usuario/rol; firma un JWT HS256 con vigencia de ocho horas."""
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(hours=8)
     to_encode.update({"exp": expire})
     
-    # Firma el token usando la llave secreta de tu archivo .env
+    # SECRET_KEY se carga desde DataBase.env mediante Settings.
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
     return encoded_jwt

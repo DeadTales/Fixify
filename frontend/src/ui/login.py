@@ -1,126 +1,87 @@
+"""Login de escritorio con solicitudes asíncronas y sesión en memoria."""
 import ttkbootstrap as ttk
-from ttkbootstrap.constants import *
-from tkinter import messagebox
-from services.api_service import api_client
+from app.async_runner import AsyncRunner
+from services import Services
+from ui.branding import load_logo, set_window_icon
+
 
 class VentanaLogin(ttk.Window):
-    def __init__(self):
-        super().__init__(
-            title="Iniciar Sesión - Sistema de Gestión",
-            themename="litera",
-            size=(450, 460),
-            minsize=(400, 450)
-        )
+    """Ventana principal; administra recursos y el ciclo de vida de la aplicación."""
+
+    def __init__(self, services=None):
+        """services: contenedor opcional para inyectar una API de pruebas."""
+        super().__init__(title='Fixify — Iniciar sesión', themename='litera', size=(450, 460))
+        self.geometry('450x540')
+        set_window_icon(self)
+        self.services = services if services is not None else Services()
+        self.runner = AsyncRunner(self)
+        self._closing = False
         self.resizable(False, False)
+        self.protocol('WM_DELETE_WINDOW', self.cerrar_aplicacion)
+        self.crear_widgets()
         self.place_window_center()
 
-        self.crear_widgets()
-
     def crear_widgets(self):
-        main_frame = ttk.Frame(self, padding=35)
-        main_frame.pack(fill=BOTH, expand=YES)
-
-        ttk.Label(main_frame, text="SISTEMA DE GESTIÓN", font=("Arial", 16, "bold")).pack(pady=(0, 5))
-        ttk.Label(main_frame, text="DE EQUIPOS TECNOLÓGICOS", font=("Arial", 10)).pack(pady=(0, 25))
-        
-        self.entry_usuario = ttk.Entry(main_frame, width=32)
-        self.entry_usuario.insert(0, "USUARIO")
-        self.entry_usuario.pack(pady=10, ipady=4)
-        self.entry_usuario.bind("<FocusIn>", lambda e: self.quitar_placeholder(self.entry_usuario, "USUARIO"))
-        self.entry_usuario.bind("<FocusOut>", lambda e: self.poner_placeholder(self.entry_usuario, "USUARIO"))
-
-        self.entry_password = ttk.Entry(main_frame, width=32)
-        self.entry_password.insert(0, "CONTRASEÑA")
-        self.entry_password.pack(pady=10, ipady=4)
-        self.entry_password.bind("<FocusIn>", lambda e: self.activar_password_mode(self.entry_password, "CONTRASEÑA"))
-        self.entry_password.bind("<FocusOut>", lambda e: self.poner_placeholder_pass(self.entry_password, "CONTRASEÑA"))
-
-        ttk.Button(
-            main_frame, 
-            text="Iniciar Sesión", 
-            bootstyle="secondary", 
-            command=self.verificar_login, 
-            width=28
-        ).pack(pady=(20, 10), ipady=4)
-
-        ttk.Button(
-            main_frame, 
-            text="¿Olvidaste tu contraseña?", 
-            bootstyle="link", 
-            command=self.mostrar_recuperacion
-        ).pack(pady=(5, 0))
-
-    def quitar_placeholder(self, entry, texto):
-        if entry.get() == texto:
-            entry.delete(0, END)
-
-    def poner_placeholder(self, entry, texto):
-        if not entry.get():
-            entry.insert(0, texto)
-
-    def activar_password_mode(self, entry, texto):
-        if entry.get() == texto:
-            entry.delete(0, END)
-            entry.config(show="*")
-
-    def poner_placeholder_pass(self, entry, texto):
-        if not entry.get():
-            entry.config(show="")
-            entry.insert(0, texto)
+        """Construye campos con etiquetas estables y feedback de conexión."""
+        body = ttk.Frame(self, padding=35)
+        body.pack(fill='both', expand=True)
+        # Tk requiere una referencia a la imagen mientras el widget esté visible.
+        self.logo = load_logo(self, (140, 140))
+        ttk.Label(body, image=self.logo).pack(pady=(0, 20))
+        ttk.Label(body, text='Usuario').pack(anchor='w')
+        self.entry_usuario = ttk.Entry(body)
+        self.entry_usuario.pack(fill='x', pady=(5, 15))
+        ttk.Label(body, text='Contraseña').pack(anchor='w')
+        self.entry_password = ttk.Entry(body, show='*')
+        self.entry_password.pack(fill='x', pady=5)
+        self.status = ttk.Label(body, text='', wraplength=370)
+        self.status.pack(fill='x', pady=10)
+        self.button = ttk.Button(body, text='Iniciar sesión', command=self.verificar_login)
+        self.button.pack(fill='x', pady=10)
+        ttk.Button(body, text='¿Olvidaste tu contraseña?', bootstyle='link',
+                   command=self.mostrar_recuperacion).pack()
+        self.bind('<Return>', lambda event: self.verificar_login())
 
     def verificar_login(self):
-        usuario = self.entry_usuario.get().strip().lower()
-        password = self.entry_password.get().strip()
-
-        if not usuario or usuario == "USUARIO" or not password or password == "CONTRASEÑA":
-            messagebox.showerror("Error de acceso", "Por favor, complete los campos de usuario y contraseña.")
+        """Valida presencia; preserva contraseña y evita solicitudes repetidas."""
+        if self._closing or str(self.button['state']) == 'disabled':
             return
+        username = self.entry_usuario.get().strip()
+        password = self.entry_password.get()
+        if not username or not password:
+            self.status.configure(text='Complete usuario y contraseña.')
+            return
+        self.button.configure(state='disabled')
+        self.status.configure(text='Conectando…')
+        self.runner.submit(self.services.auth.login(username, password), self,
+                           lambda data: self._logged_in(username, data), self._failed)
 
-        exito, data = api_client.login(usuario, password)
+    def _logged_in(self, username, data):
+        """username: cuenta ingresada; data: respuesta validada con token y rol."""
+        from ui.sistema_gestion import SistemaGestion
+        self.services.api.set_token(data.access_token)
+        self.entry_password.delete(0, 'end')
+        self.status.configure(text='')
+        self.button.configure(state='normal')
+        self.withdraw()
+        SistemaGestion(self, username, data.role, self.services, self.runner)
 
-        if exito:
-            token = data.get("access_token")
-            rol_backend = data.get("role", "tecnico")
-            
-            mapa_roles = {
-                "admin": "Administrador",
-                "tecnico": "Técnico",
-                "recepcion": "Recepción"
-            }
-            rol_display = mapa_roles.get(rol_backend, rol_backend.capitalize())
-
-            self.withdraw()
-            
-            self.entry_usuario.delete(0, 'end')
-            self.poner_placeholder(self.entry_usuario, "USUARIO")
-            self.entry_password.delete(0, 'end')
-            self.poner_placeholder_pass(self.entry_password, "CONTRASEÑA")
-            self.focus_set()
-            
-            from ui.sistema_gestion import SistemaGestion
-            SistemaGestion(master=self, usuario_actual=usuario, rol_actual=rol_display, token=token)
-        else:
-            messagebox.showerror("Acceso denegado", str(data))
+    def _failed(self, error):
+        """error: fallo de login; deja corregir credenciales o reintentar."""
+        self.status.configure(text=str(error))
+        self.button.configure(state='normal')
 
     def mostrar_recuperacion(self):
-        ventana = ttk.Toplevel(self)
-        ventana.title("Recuperar Cuenta")
-        ventana.geometry("480x280")
-        ventana.resizable(False, False)
-        ventana.place_window_center()
+        """Informa el procedimiento actual; no existe recuperación automática."""
+        from tkinter import messagebox
+        messagebox.showinfo('Recuperar cuenta', 'Contacte al administrador para restablecer su cuenta.', parent=self)
 
-        ttk.Label(ventana, text="Recuperación de Cuenta", font=("Arial", 16, "bold")).pack(pady=(20, 10))
-
-        mensaje = (
-            "Si no recuerdas tu contraseña o necesitas acceso al sistema, "
-            "contacta al administrador de la plataforma para restablecer tu cuenta."
-        )
-        ttk.Label(ventana, text=mensaje, wraplength=400, justify=CENTER).pack(pady=20)
-
-        ttk.Button(
-            ventana, 
-            text="Entendido", 
-            bootstyle="secondary", 
-            command=ventana.destroy, 
-            width=20
-        ).pack(pady=10)
+    def cerrar_aplicacion(self):
+        """Cancela tareas y cierra HTTP antes de destruir la ventana principal."""
+        if self._closing:
+            return
+        self._closing = True
+        self.services.api.set_token(None)
+        self.button.configure(state='disabled')
+        self.status.configure(text='Cerrando…')
+        self.runner.close(self.services.api.aclose(), self.destroy)
