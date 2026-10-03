@@ -45,7 +45,7 @@ class ModelsTests(unittest.TestCase):
         equipment = Equipo(id=3, tipo='Laptop', marca='Marca', modelo='Modelo',
                            problema_reportado='No enciende', client_id=7)
         user = Usuario(id=2, username='tecnico', role='tecnico', is_active=False)
-        self.assertEqual(ClientsView.row(None, client), (7, 'Ana', '3312345678', '-', '-'))
+        self.assertEqual(ClientsView.row(None, client), (7, 'Ana', '3312345678', '-'))
         self.assertEqual(EquipmentView.row(None, equipment),
                          ('EQ-003', 'Laptop', 'Marca', 'Modelo', '-', 'No enciende', 7))
         self.assertEqual(UsersView.row(None, user), (2, 'tecnico', 'tecnico', 'Inactivo'))

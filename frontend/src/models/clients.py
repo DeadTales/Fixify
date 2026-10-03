@@ -4,11 +4,10 @@ from models.base import Contrato, Mensaje
 
 
 class ClienteCrear(Contrato):
-    """nombre/telefono: obligatorios; correo/direccion: contacto opcional."""
+    """nombre/telefono: obligatorios; correo: contacto opcional."""
     nombre: str = Field(min_length=2, max_length=100)
     telefono: str = Field(min_length=8, max_length=20)
     correo: str | None = None
-    direccion: str | None = Field(default=None, max_length=250)
 
 
 class Cliente(Contrato):
@@ -17,7 +16,6 @@ class Cliente(Contrato):
     nombre: str
     telefono: str
     correo: str | None = None
-    direccion: str | None = None
 
 
 class ClienteRegistrado(Mensaje):

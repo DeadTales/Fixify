@@ -63,7 +63,7 @@ class ServicesTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_module_routes_and_payloads(self):
         """Cada módulo mantiene sus rutas, opcionales y parámetros de dominio."""
-        await self.services.clients.crear('Cliente', '3312345678', '', '')
+        await self.services.clients.crear('Cliente', '3312345678', '')
         self.assertEqual(json.loads(self.requests[-1].content)['correo'], None)
         await self.services.clients.buscar('Ana & Luis')
         self.assertEqual(self.requests[-1].url.params['q'], 'Ana & Luis')

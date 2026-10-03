@@ -10,12 +10,12 @@ class ClientsService(ModuleService):
         """Retorna los clientes permitidos para la sesión actual."""
         return await self._list('/clientes/', Cliente)
 
-    async def crear(self, nombre, telefono, correo=None, direccion=None) -> ClienteRegistrado:
-        """nombre/telefono: obligatorios; correo/direccion: datos opcionales."""
+    async def crear(self, nombre, telefono, correo=None) -> ClienteRegistrado:
+        """nombre/telefono: obligatorios; correo: dato opcional."""
 
         entrada = self._parse(ClienteCrear, {
             'nombre': nombre, 'telefono': telefono,
-            'correo': correo or None, 'direccion': direccion or None,
+            'correo': correo or None,
         }, entrada=True)
         data = await self.api.request('POST', '/clientes/', json=entrada.model_dump())
 

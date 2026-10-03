@@ -13,7 +13,3 @@ class Client(Base):
     
     # --- DATOS OPCIONALES (nullable=True) ---
     correo = Column(String(100), nullable=True)     # No todos los clientes usan correo
-    @property
-    def direccion(self):
-        """Compatibilidad API: el SQL base no define dirección persistida."""
-        return None

@@ -13,9 +13,12 @@ class ClientsView(CollectionView):
     menu_order = 20
     service_name = 'clients'
     columns = ('ID', 'Nombre', 'Teléfono', 'Correo', 'Dirección')
-    fields = (Field('nombre', 'Nombre completo'), Field('telefono', 'Teléfono'),
-              Field('correo', 'Correo (opcional)', required=False),
-              Field('direccion', 'Dirección (opcional)', required=False))
+    # Dirección es opcional y se persiste junto con los datos de contacto.
+    fields = (
+        Field('nombre', 'Nombre completo'),
+        Field('telefono', 'Teléfono'),
+        Field('correo', 'Correo (opcional)', required=False),
+    )
 
     async def fetch(self):
         """Consulta clientes desde su service."""
@@ -27,4 +30,4 @@ class ClientsView(CollectionView):
 
     def row(self, record: Cliente):
         """record: cliente API; convierte campos opcionales vacíos a guion."""
-        return (record.id, record.nombre, record.telefono, record.correo or '-', record.direccion or '-')
+        return (record.id, record.nombre, record.telefono, record.correo or '-')

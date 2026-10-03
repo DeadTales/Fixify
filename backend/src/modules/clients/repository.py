@@ -5,8 +5,6 @@ from src.modules.clients.schema import ClientCreate
 
 class ClientRepository:
     def create(self, db: Session, client_in: ClientCreate):
-        if client_in.direccion:
-            raise HTTPException(status_code=422, detail='El SQL base no incluye direcci?n del cliente.')
         # 1. Validar si ya existe un cliente con el mismo teléfono
         cliente_existente = db.query(Client).filter(Client.telefono == client_in.telefono).first()
         
@@ -20,7 +18,7 @@ class ClientRepository:
         db_client = Client(
             nombre=client_in.nombre,
             telefono=client_in.telefono,
-            correo=client_in.correo
+            correo=client_in.correo,
         )
         db.add(db_client)
         db.commit()

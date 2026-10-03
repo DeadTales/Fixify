@@ -9,7 +9,6 @@ class ClientCreate(BaseModel):
     
     # OPCIONAL: Usamos Optional[tipo] = None
     correo: Optional[EmailStr] = Field(None, description="Correo electrónico opcional pero con formato válido si se proporciona")
-    direccion: Optional[str] = Field(None, max_length=250, description="Dirección opcional")
 
 # Esquema de respuesta para el cliente
 class ClientResponse(BaseModel):
@@ -17,7 +16,6 @@ class ClientResponse(BaseModel):
     nombre: str
     telefono: str
     correo: Optional[str] = None
-    direccion: Optional[str] = None
 
     class Config:
         from_attributes = True
