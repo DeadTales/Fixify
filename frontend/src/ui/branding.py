@@ -1,4 +1,4 @@
-"""Carga el logo compartido por login, navegación e iconos de ventana."""
+"""Carga el logo en el login, navegación e iconos de ventana."""
 from pathlib import Path
 from PIL import Image, ImageTk
 
