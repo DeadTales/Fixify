@@ -1,5 +1,6 @@
 """Login de escritorio con solicitudes asíncronas y sesión en memoria."""
 import ttkbootstrap as ttk
+import logging
 from app.async_runner import AsyncRunner
 from services import Services
 from ui.branding import load_logo, set_window_icon
@@ -73,13 +74,39 @@ class VentanaLogin(ttk.Window):
 
     def _logged_in(self, username, data):
         """username: cuenta ingresada; data: respuesta validada con token y rol."""
-        from ui.sistema_gestion import SistemaGestion
+        # El 200 valida credenciales, pero abrir la UI todavía puede fallar.
+        # Mantener visible login hasta completar imports y construir la ventana.
+        previous_children = set(self.winfo_children())
         self.services.api.set_token(data.access_token)
+
+        try:
+            from ui.sistema_gestion import SistemaGestion
+
+            window = SistemaGestion(
+                self, username, data.role, self.services, self.runner
+            )
+        except Exception:
+            logging.exception('No se pudo abrir la ventana de gestión tras el login')
+            self.services.api.set_token(None)
+
+            # Una construcción interrumpida puede dejar un Toplevel parcial.
+            for child in self.winfo_children():
+                if child not in previous_children:
+                    child.destroy()
+
+            self.deiconify()
+            self._failed(RuntimeError(
+                'El login fue aceptado, pero no se pudo abrir la ventana. '
+                'Revisa el error en la terminal del frontend.'
+            ))
+            return
+
         self.entry_password.delete(0, 'end')
         self.status.configure(text='')
         self.button.configure(state='normal')
         self.withdraw()
-        SistemaGestion(self, username, data.role, self.services, self.runner)
+        # Dar foco después de ocultar login y de que Tk procese la nueva ventana.
+        window.after_idle(window.bring_to_front)
 
     def _failed(self, error):
         """error: fallo de login; deja corregir credenciales o reintentar."""
