@@ -30,10 +30,10 @@ class SistemaGestion(ttk.Toplevel):
 
         self.logo = load_logo(self, (150, 150))
         ttk.Label(sidebar, image=self.logo, bootstyle='inverse-secondary').pack(pady=15)
-        ttk.Label(sidebar, text=f'Usuario: {usuario_actual}\nRol: {ROLE_LABELS.get(
+        ttk.Label(sidebar, text=f'''Usuario: {usuario_actual}\nRol: {ROLE_LABELS.get(
             self.role,
             self.role,
-        )}',
+        )}''',
                   bootstyle='inverse-secondary').pack(pady=(0, 20))
 
         # Cada vista declara etiqueta, roles y orden. El backend debe validar
