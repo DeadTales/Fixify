@@ -12,8 +12,8 @@ class ClientsView(CollectionView):
     allowed_roles = ('admin', 'recepcion')
     menu_order = 20
     service_name = 'clients'
-    columns = ('ID', 'Nombre', 'Teléfono', 'Correo', 'Dirección')
-    # Dirección es opcional y se persiste junto con los datos de contacto.
+    columns = ('ID', 'Nombre', 'Teléfono', 'Correo')
+   
     fields = (
         Field('nombre', 'Nombre completo'),
         Field('telefono', 'Teléfono'),

@@ -1,5 +1,5 @@
 """Ventana de navegación; delega cada módulo a su propia vista."""
-from tkinter import messagebox
+from tkinter import TclError, messagebox
 import ttkbootstrap as ttk
 from ui.views.dashboard import DashboardView
 from ui.views.discovery import available_views
@@ -14,10 +14,9 @@ class SistemaGestion(ttk.Toplevel):
     def __init__(self, master, usuario_actual, rol_actual, services, runner):
         """master: login; usuario_actual: cuenta; rol_actual: rol API; services/runner: dependencias."""
         super().__init__(master)
-        set_window_icon(self)
-
         self.services, self.runner, self.role = services, runner, rol_actual
         self.view = None
+        set_window_icon(self)
         self.title('Fixify — Gestión de Equipos Tecnológicos')
         self.geometry('1100x700')
         self.minsize(900, 600)
@@ -60,6 +59,29 @@ class SistemaGestion(ttk.Toplevel):
 
         self.view = view_class(self.content, self.services, self.runner, self.role)
         self.view.pack(fill='both', expand=True)
+
+    def bring_to_front(self):
+        """Eleva la ventana tras login; topmost se libera para usar otras apps."""
+        if not self.winfo_exists():
+            return
+
+        self.deiconify()
+        self.lift()
+        self.focus_force()
+
+        try:
+            self.attributes('-topmost', True)
+            self.after(250, self._release_topmost)
+        except TclError:
+            pass  # Algunos gestores no admiten topmost; lift ya se ejecutó.
+
+    def _release_topmost(self):
+        """Restaura la prioridad normal si la ventana sigue abierta."""
+        if self.winfo_exists():
+            try:
+                self.attributes('-topmost', False)
+            except TclError:
+                pass
 
     def cerrar_sesion(self):
         """Borra el JWT local y vuelve a login; no revoca tokens en backend."""
