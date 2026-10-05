@@ -1,4 +1,5 @@
-import { addKeyword, MemoryDB } from '@builderbot/bot'
+import { addKeyword } from '@builderbot/bot'
+import { PostgreSQLAdapter } from '@builderbot/database-postgres'
 import { MetaProvider } from '@builderbot/provider-meta'
 import { ConsultarServicio, validarFolio } from '../services/consultar-servicio'
 
@@ -8,7 +9,7 @@ import { ConsultarServicio, validarFolio } from '../services/consultar-servicio'
  * La dependencia se inyecta para usar el mismo diálogo en demo y con API real.
  */
 export const crearFlujoConsulta = (consultar: ConsultarServicio, demo: boolean) =>
-    addKeyword<MetaProvider, MemoryDB>(['hola', 'menu', 'menú', 'estado', 'consulta'], { sensitive: true })
+    addKeyword<MetaProvider, PostgreSQLAdapter>(['hola', 'menu', 'menú', 'estado', 'consulta'], { sensitive: true })
         .addAnswer([
             'Bienvenido a Fixify. Aquí puedes consultar el estado de tu reparación.',
             ...(demo ? ['MODO DEMOSTRACIÓN: sólo datos ficticios. Folio de ejemplo: DEMO-001.'] : []),

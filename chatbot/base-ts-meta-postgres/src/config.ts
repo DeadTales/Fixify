@@ -11,13 +11,19 @@ export const cargarConfiguracion = () => {
     if (!['api', 'demo'].includes(modo)) throw new Error('CHATBOT_MODE debe ser api o demo')
     const port = Number(process.env.PORT ?? 3008)
     if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT inválido')
+    const dbPort = Number(process.env.POSTGRES_PORT ?? 5432)
+    if (!Number.isInteger(dbPort) || dbPort < 1 || dbPort > 65535) throw new Error('POSTGRES_PORT inválido')
+    const postgres = {
+        host: requerida('POSTGRES_HOST'), user: requerida('POSTGRES_USER'),
+        password: requerida('POSTGRES_PASSWORD'), database: requerida('POSTGRES_DB'), port: dbPort,
+    }
     const meta = {
         jwtToken: requerida('META_ACCESS_TOKEN'), numberId: requerida('META_PHONE_NUMBER_ID'),
         verifyToken: requerida('META_VERIFY_TOKEN'), version: requerida('META_API_VERSION'),
     }
     const apiUrl = modo === 'api' ? requerida('BACKEND_URL') : ''
     if (modo === 'api' && !['http:', 'https:'].includes(new URL(apiUrl).protocol)) throw new Error('BACKEND_URL inválida')
-    return { port, meta, demo: modo === 'demo', apiUrl,
+    return { port, meta, postgres, demo: modo === 'demo', apiUrl,
         apiToken: modo === 'api' ? requerida('BACKEND_BOT_TOKEN') : '',
         telefonoDemo: modo === 'demo' ? requerida('DEMO_PHONE_NUMBER') : '',
     }

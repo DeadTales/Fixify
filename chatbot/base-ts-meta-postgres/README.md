@@ -26,7 +26,7 @@ Para integrar: cambia `CHATBOT_MODE=api`, configura `BACKEND_URL` y `BACKEND_BOT
 
 | Archivo | Responsabilidad |
 | --- | --- |
-| `src/app.ts` | Compone configuración, Meta, historial temporal, servicio y flujo; inicia HTTP |
+| `src/app.ts` | Compone configuración, Meta, historial en PostgreSQL, servicio y flujo; inicia HTTP |
 | `src/config.ts` | Exige variables y valida modo/puerto antes de iniciar |
 | `src/flows/consulta.flow.ts` | Define entrada, captura, validación, cancelación y respuestas |
 | `src/services/consultar-servicio.ts` | Tipos públicos, estados, validación, API con timeout y fixture demo |
@@ -54,6 +54,8 @@ pnpm lint
 pnpm build
 ```
 
-Estas pruebas no necesitan Meta ni PostgreSQL. Quedan pendientes pruebas completas por WhatsApp y contra el Backend real. MemoryDB pierde historial al reiniciar; la carpeta conserva el nombre de la plantilla postgres por compatibilidad de rutas.
+Las pruebas de consulta no necesitan Meta ni PostgreSQL. La prueba de persistencia requiere una base dedicada y se habilita con CHATBOT_TEST_POSTGRES=1; se omite por defecto. Quedan pendientes pruebas completas por WhatsApp y contra el Backend real. PostgreSQL persiste eventos y contactos; no garantiza conservar todas las capturas pendientes tras reiniciar; la carpeta conserva el nombre de la plantilla postgres por compatibilidad de rutas.
 
 La documentación completa, plan y código explicado están en [Documentacion_chatbot.ipynb](../../docs/Documentacion_chatbot.ipynb). Para instalar desde esta carpeta usa `pnpm --dir .. install --frozen-lockfile`.
+
+Configura también POSTGRES_HOST, POSTGRES_PORT, POSTGRES_USER, POSTGRES_PASSWORD y POSTGRES_DB en .env. Crea previamente el rol y la base dedicada. La guía ampliada de [autenticación y PostgreSQL](../docs/AUTENTICACION_Y_POSTGRESQL.ipynb) explica permisos y límites.

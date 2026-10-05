@@ -14,6 +14,7 @@
   "keywords": [],
   "dependencies": {
     "@builderbot/bot": "1.4.2",
+    "@builderbot/database-postgres": "1.4.2",
     "@builderbot/provider-meta": "1.4.2"
   },
   "devDependencies": {
