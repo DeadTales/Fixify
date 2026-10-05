@@ -23,6 +23,11 @@ from src.config.settings import settings
 from src.database.conexion import get_db
 from src.modules.equipment.model import Equipment
 from src.modules.equipment.router import router
+from src.database.conexion import Base
+from src.modules.users.model import User
+from src.modules.roles.model import Role
+from src.database.domain_models import ServiceOrder
+from src.shared.security import get_password_hash
 from services import Services
 from services.api_client import ApiClient
 
@@ -46,6 +51,15 @@ class EquipmentTests(unittest.TestCase):
                 numero_serie VARCHAR(100), falla_reportada TEXT)'''))
             connection.execute(text("INSERT INTO clientes VALUES (7, 'Cliente prueba', '3312345678', NULL)"))
 
+        ServiceOrder.__table__.create(self.engine)
+        Base.metadata.tables['roles'].create(self.engine)
+        Base.metadata.tables['usuarios'].create(self.engine)
+        with self.sessions() as db:
+            for code, label in [('admin', 'Administrador'), ('recepcion', 'Recepcionista'), ('tecnico', 'Técnico')]:
+                role = Role(nombre_rol=label)
+                db.add(User(username=code, hashed_password=get_password_hash('Prueba123'), rol=role))
+            db.commit()
+
         def override_db():
             """Entrega una sesión de prueba y la cierra al terminar la petición."""
             with self.sessions() as session:
@@ -67,7 +81,7 @@ class EquipmentTests(unittest.TestCase):
     @staticmethod
     def auth_headers(role):
         """role: rol simulado; firma un JWT exclusivamente de pruebas."""
-        token = jwt.encode({'sub': 'prueba', 'role': role,
+        token = jwt.encode({'sub': role, 'role': role,
                             'exp': datetime.now(timezone.utc) + timedelta(minutes=5)},
                            settings.SECRET_KEY, algorithm='HS256')
         return {'Authorization': f'Bearer {token}'}
@@ -106,11 +120,56 @@ class EquipmentTests(unittest.TestCase):
     def test_permissions(self):
         """Conserva acceso admin/recepción y rechaza técnico o falta de JWT."""
         for method in ('get', 'post'):
-            kwargs = {'json': self.payload} if method == 'post' else {}
+            kwargs = {'json': {**self.payload, 'numero_serie': 'PERMISOS'}} if method == 'post' else {}
             request = getattr(self.client, method)
             self.assertEqual(request('/equipos/', **kwargs).status_code, 401)
             self.assertEqual(request('/equipos/', headers=self.auth_headers('tecnico'), **kwargs).status_code, 403)
             self.assertIn(request('/equipos/', headers=self.auth_headers('admin'), **kwargs).status_code, (200, 201))
+
+    def test_edit_delete_and_history(self):
+        created = self.client.post('/equipos/', json=self.payload, headers=self.headers).json()
+        identifier = created['detalles']['id_interno']
+        path = f'/equipos/{identifier}'
+        changed = {**self.payload, 'modelo': 'Modelo actualizado', 'numero_serie': None}
+        result = self.client.put(path, json=changed, headers=self.headers)
+        self.assertEqual(result.status_code, 200, result.text)
+        self.assertEqual(result.json()['modelo'], 'Modelo actualizado')
+        self.assertEqual(self.client.put(path, json=changed,
+                         headers=self.auth_headers('tecnico')).status_code, 403)
+        with self.sessions() as db:
+            db.add(ServiceOrder(folio='TEST-001', id_equipo=identifier, id_cliente=7, estado='Recibido'))
+            db.commit()
+        self.assertEqual(self.client.delete(path, headers=self.headers).status_code, 409)
+        with self.sessions() as db:
+            db.query(ServiceOrder).delete()
+            db.commit()
+        self.assertEqual(self.client.delete(path, headers=self.headers).status_code, 200)
+        self.assertEqual(self.client.delete(path, headers=self.headers).status_code, 404)
+
+    def test_edit_rejects_duplicate_and_unknown_owner(self):
+        first = self.client.post('/equipos/', json=self.payload, headers=self.headers).json()['detalles']['id_interno']
+        self.client.post('/equipos/', json={**self.payload, 'numero_serie': 'OTRO'}, headers=self.headers)
+        self.assertEqual(self.client.put(f'/equipos/{first}', json={**self.payload, 'numero_serie': 'OTRO'},
+                                        headers=self.headers).status_code, 409)
+        self.assertEqual(self.client.put(f'/equipos/{first}', json={**self.payload, 'client_id': 999},
+                                        headers=self.headers).status_code, 404)
+
+    def test_duplicate_serial(self):
+        self.assertEqual(self.client.post('/equipos/', json=self.payload, headers=self.headers).status_code, 201)
+        self.assertEqual(self.client.post('/equipos/', json=self.payload, headers=self.headers).status_code, 409)
+        self.assertEqual(len(self.client.get('/equipos/', headers=self.headers).json()), 1)
+
+    def test_current_account_state_and_role(self):
+        headers = self.auth_headers('admin')
+        with self.sessions() as db:
+            user = db.query(User).filter(User.username == 'admin').one()
+            user.rol = db.query(Role).filter(Role.nombre_rol == 'Técnico').one()
+            db.commit()
+        self.assertEqual(self.client.get('/equipos/', headers=headers).status_code, 403)
+        with self.sessions() as db:
+            db.query(User).filter(User.username == 'admin').one().is_active = False
+            db.commit()
+        self.assertEqual(self.client.get('/equipos/', headers=headers).status_code, 401)
 
     def test_frontend_service_consumes_real_router(self):
         """httpx del frontend usa el router real en memoria mediante ASGITransport."""

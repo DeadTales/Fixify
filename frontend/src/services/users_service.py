@@ -1,7 +1,7 @@
 """Rutas de administración de usuarios, independientes de las otras entidades."""
 from services.api_client import ModuleService
 from models.base import Mensaje
-from models.users import Usuario, UsuarioCrear, UsuarioRegistrado, RolActualizar
+from models.users import Usuario, UsuarioCrear, UsuarioRegistrado, RolActualizar, UsuarioEditar
 
 
 class UsersService(ModuleService):
@@ -40,3 +40,9 @@ class UsersService(ModuleService):
         data = await self.api.request('PATCH', f'/usuarios/{user_id}/{action}')
 
         return self._parse(Mensaje, data)
+
+
+    async def editar(self, user_id, username, role) -> Usuario:
+        entrada = self._parse(UsuarioEditar, {'username': username, 'role': role}, entrada=True)
+        data = await self.api.request('PUT', f'/usuarios/{user_id}', json=entrada.model_dump())
+        return self._parse(Usuario, data)

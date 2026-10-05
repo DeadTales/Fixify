@@ -1,9 +1,10 @@
 """Contrato de equipos; mantiene los nombres públicos de la API."""
-from pydantic import Field
+from pydantic import Field, ConfigDict
 from models.base import Contrato, Mensaje
 
 
 class EquipoCrear(Contrato):
+    model_config = ConfigDict(str_strip_whitespace=True)
     """Características, falla y client_id del propietario; serie opcional."""
     tipo: str = Field(min_length=2, max_length=50)
     marca: str = Field(min_length=2, max_length=50)

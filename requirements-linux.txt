@@ -1,3 +1,5 @@
+# Linux: instalar también python3-tkinter con el gestor del sistema.
+# unittest pertenece a Python; las pruebas no requieren pytest.
 # Python dependencies for Linux. BuilderBot uses pnpm.
 -r backend/requirements.txt
 -r frontend/requirements.txt

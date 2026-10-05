@@ -1,5 +1,6 @@
 """Rutas de clientes y transformación de sus datos de entrada."""
 from services.api_client import ModuleService
+from models.base import Mensaje
 from models.clients import Cliente, ClienteCrear, ClienteRegistrado
 
 
@@ -24,3 +25,13 @@ class ClientsService(ModuleService):
     async def buscar(self, termino) -> list[Cliente]:
         """termino: parte del nombre o teléfono que se desea localizar."""
         return await self._list('/clientes/buscar', Cliente, params={'q': termino})
+
+
+    async def editar(self, record_id, **values) -> Cliente:
+        entrada = self._parse(ClienteCrear, {**values, "correo": values.get("correo") or None}, entrada=True)
+        data = await self.api.request('PUT', f'/clientes/{record_id}', json=entrada.model_dump())
+        return self._parse(Cliente, data)
+
+    async def eliminar(self, record_id) -> Mensaje:
+        data = await self.api.request('DELETE', f'/clientes/{record_id}')
+        return self._parse(Mensaje, data)

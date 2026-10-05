@@ -21,10 +21,10 @@ def listar_equipos(db: Session = Depends(get_db)):
 def registrar_equipo(equipo: EquipmentCreate, db: Session = Depends(get_db)):
     """equipo: datos validados; db: sesión inyectada para guardar el registro."""
     nuevo_equipo = equipment_repository.create(db, equipo)
-    
+
     # Generamos un folio formateado para recepción (Ej. EQ-001, EQ-015)
     folio_visible = f"EQ-{nuevo_equipo.id:03d}"
-    
+
     return {
         "mensaje": "¡Equipo registrado correctamente!",
         "folio": folio_visible,  # <-- Esto es lo que verá la recepcionista en grande
@@ -36,3 +36,14 @@ def registrar_equipo(equipo: EquipmentCreate, db: Session = Depends(get_db)):
             "cliente_id": nuevo_equipo.client_id
         }
     }
+
+
+@router.put('/{record_id}', response_model=EquipmentResponse)
+def editar_equipment(record_id: int, values: EquipmentCreate, db: Session = Depends(get_db)):
+    return equipment_repository.update(db, record_id, values)
+
+
+@router.delete('/{record_id}')
+def eliminar_equipment(record_id: int, db: Session = Depends(get_db)):
+    equipment_repository.delete(db, record_id)
+    return {'mensaje': 'Registro eliminado correctamente.'}

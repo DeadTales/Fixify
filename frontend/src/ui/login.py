@@ -12,7 +12,10 @@ class VentanaLogin(ttk.Window):
     def __init__(self, services=None):
         """services: contenedor opcional para inyectar una API de pruebas."""
         super().__init__(title='Fixify — Iniciar sesión', themename='litera', size=(450, 460))
-        self.geometry('450x540')
+        self.geometry('450x610')
+        self.style.configure('TButton', padding=(14, 9))
+        self.style.configure('Treeview', rowheight=34, font=('DejaVu Sans', 10))
+        self.style.configure('Treeview.Heading', font=('DejaVu Sans', 10, 'bold'), padding=10)
         set_window_icon(self)
 
         self.services = services if services is not None else Services()
@@ -32,6 +35,9 @@ class VentanaLogin(ttk.Window):
         # Tk requiere una referencia a la imagen mientras el widget esté visible.
         self.logo = load_logo(self, (140, 140))
         ttk.Label(body, image=self.logo).pack(pady=(0, 20))
+        ttk.Label(body, text='Bienvenido a Fixify', font=('DejaVu Sans', 20, 'bold')).pack(pady=(0, 6))
+        ttk.Label(body, text='Gestiona clientes y equipos desde un solo lugar.',
+                  bootstyle='secondary', wraplength=370).pack(pady=(0, 20))
         ttk.Label(body, text='Usuario').pack(anchor='w')
 
         self.entry_usuario = ttk.Entry(body)
@@ -40,6 +46,11 @@ class VentanaLogin(ttk.Window):
 
         self.entry_password = ttk.Entry(body, show='*')
         self.entry_password.pack(fill='x', pady=5)
+        self.show_password = ttk.BooleanVar(value=False)
+        ttk.Checkbutton(body, text='Mostrar contraseña', variable=self.show_password,
+                        command=lambda: self.entry_password.configure(
+                            show='' if self.show_password.get() else '*')).pack(anchor='w', pady=5)
+        self.entry_usuario.focus_set()
 
         self.status = ttk.Label(body, text='', wraplength=370)
         self.status.pack(fill='x', pady=10)

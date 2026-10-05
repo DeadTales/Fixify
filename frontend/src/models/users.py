@@ -1,5 +1,5 @@
 """Contrato de personal, alta y cambios de rol; nunca conserva hashes."""
-from pydantic import Field
+from pydantic import Field, ConfigDict
 from models.base import Contrato, Mensaje, Rol
 
 
@@ -26,3 +26,10 @@ class RolActualizar(Contrato):
 class UsuarioRegistrado(Mensaje):
     """usuario: username confirmado por POST /usuarios/."""
     usuario: str
+
+
+class UsuarioEditar(Contrato):
+    """Datos editables de una cuenta existente."""
+    model_config = ConfigDict(str_strip_whitespace=True)
+    username: str = Field(min_length=4, max_length=50)
+    role: Rol

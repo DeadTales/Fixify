@@ -1,7 +1,7 @@
 """Vista de administración de cuentas y roles."""
 from tkinter import messagebox
 import ttkbootstrap as ttk
-from ui.components import CollectionView, Field
+from ui.components import CollectionView, Field, FormDialog
 from models.users import Usuario
 
 ROLES = {'Administrador': 'admin', 'Técnico': 'tecnico', 'Recepción': 'recepcion'}
@@ -25,27 +25,37 @@ class UsersView(CollectionView):
         """Recibe dependencias comunes y agrega acciones administrativas."""
         super().__init__(master, services, runner, role)
 
-        actions = ttk.Frame(self)
-        actions.pack(fill='x', pady=10)
+        self.edit_button = ttk.Button(self.action_bar, text='Editar usuario', bootstyle='warning',
+                                      command=self.edit_selected)
+        self.edit_button.pack(side='left', padx=(10, 0))
+        self.access_button = ttk.Button(self.action_bar, text='Desactivar usuario', bootstyle='danger',
+                                        command=self.toggle_active)
+        self.access_button.pack(side='left', padx=(10, 0))
+        self.action_buttons = [self.edit_button, self.access_button]
+        self.table.bind('<<TreeviewSelect>>', self._selection_changed)
 
-        self.role_input = ttk.Combobox(
-            actions,
-            values=tuple(ROLES),
-            state='readonly',
-            width=18,
-        )
-        self.role_input.set('Técnico')
-        self.role_input.pack(side='left', padx=(0, 10))
+    def _selection_changed(self, event=None):
+        selected = self.table.selection()
+        user = self.records[int(selected[0])] if selected else None
+        active = user is None or user.is_active
+        self.access_button.configure(text='Desactivar usuario' if active else 'Activar usuario',
+                                     bootstyle='danger' if active else 'success')
 
-        self.action_buttons = []
-
-        for label, callback in (
-            ('Cambiar rol', self.change_role),
-            ('Activar / Desactivar', self.toggle_active),
-        ):
-            button = ttk.Button(actions, text=label, command=callback)
-            button.pack(side='left', padx=5)
-            self.action_buttons.append(button)
+    def edit_selected(self):
+        if self._mutating:
+            return
+        user = self._selected()
+        if user is None:
+            return
+        if self._dialog is not None and self._dialog.winfo_exists():
+            self._dialog.lift()
+            return
+        role_label = next(label for label, code in ROLES.items() if code == user.role)
+        async def save(values):
+            return await self.services.users.editar(user.id, values['username'], ROLES[values['role']])
+        self._dialog = FormDialog(self, f'Editar usuario: {user.username}',
+            (Field('username', 'Usuario (mín. 4 caracteres)'), Field('role', 'Rol', choices=tuple(ROLES))),
+            self.runner, save, self._edited, initial={'username': user.username, 'role': role_label})
 
     async def fetch(self):
         """Consulta personal autorizado para administración."""
@@ -70,30 +80,19 @@ class UsersView(CollectionView):
 
         return self.records[int(selected[0])]
 
-    def change_role(self):
-        """Solicita cambio al rol seleccionado para la cuenta elegida."""
-
-        user = self._selected()
-
-        if user and messagebox.askyesno(
-            'Cambiar rol',
-            '¿Cambiar el rol de esta cuenta?',
-            parent=self,
-        ):
-            self._update(
-                self.services.users.cambiar_rol,
-                user.id,
-                ROLES[self.role_input.get()],
-            )
-
     def toggle_active(self):
         """Alterna acceso sin eliminar el historial del usuario."""
 
+        if self._mutating:
+            return
+        if self._dialog is not None and self._dialog.winfo_exists():
+            self.status.configure(text='Cierre el formulario antes de cambiar el acceso.')
+            return
         user = self._selected()
 
         if user and messagebox.askyesno(
-            'Cambiar acceso',
-            '¿Cambiar el acceso de esta cuenta?',
+            'Desactivar usuario' if user.is_active else 'Activar usuario',
+            f"¿{'Desactivar' if user.is_active else 'Activar'} la cuenta {user.username}?",
             parent=self,
         ):
             self._update(self.services.users.activar, user.id, not user.is_active)
@@ -101,6 +100,7 @@ class UsersView(CollectionView):
     def _update(self, operation, *args):
         """operation: método async; args: datos; bloquea acciones repetidas."""
 
+        self._mutating = True
         if self._load_future is not None:
             self._load_future.cancel()
 
@@ -118,6 +118,7 @@ class UsersView(CollectionView):
     def _updated(self, result):
         """result: respuesta API; restaura acciones y recarga cuentas."""
 
+        self._mutating = False
         for button in [self.create, *self.action_buttons]:
             button.configure(state='normal')
 
@@ -126,6 +127,7 @@ class UsersView(CollectionView):
     def _update_failed(self, error):
         """error: fallo; permite reintentar sin ocultar la causa."""
 
+        self._mutating = False
         for button in [self.create, *self.action_buttons]:
             button.configure(state='normal')
 

@@ -1,6 +1,6 @@
 # Backend de Fixify
 
-API con FastAPI, SQLAlchemy y PostgreSQL en Supabase. La documentación detallada, con contratos, flujo de autenticación y explicaci?n del código, está en [Documentacion_backend.ipynb](../docs/Documentacion_backend.ipynb).
+API con FastAPI, SQLAlchemy y PostgreSQL en Supabase. La documentación detallada, con contratos, flujo de autenticación y explicaci?n del código, está en [Documentacion_backend.ipynb](../docs/Back/Documentacion_backend.ipynb).
 
 ## Ejecutar
 
@@ -41,3 +41,30 @@ python -m unittest discover -s backend/tests -p "test_*.py"
 ```
 
 Las ocho pruebas usan SQLite y peticiones ASGI locales. Verifican el contrato SQL, equipos, hashes, login y activaci?n; no prueban la conexión remota a Supabase.
+
+
+## Si Uvicorn no encuentra FastAPI aunque está instalado
+
+Si pip encuentra FastAPI dentro del entorno, pero el traceback de uvicorn muestra `/usr/lib/python.../site-packages/uvicorn`, se están usando dos intérpretes distintos. Desde la carpeta backend, ejecutar:
+
+```bash
+python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
+
+`python -m uvicorn` carga Uvicorn con el Python activo; `main:app` selecciona el objeto app de main.py; `--reload` reinicia el servidor ante cambios de código en desarrollo; `--host 127.0.0.1` escucha en la máquina local; `--port 8000` selecciona el puerto.
+
+Para el entorno fixify de esta máquina, puede seleccionarse el intérprete explícitamente, sin depender de PATH:
+
+```bash
+/home/deadtales/.venvs/fixify/bin/python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Esta ruta es específica de esta máquina. Para otros entornos utilizar su propio ejecutable. Si faltan dependencias, desde backend instalar con `python -m pip install -r requirements.txt` usando ese mismo intérprete. No hace falta reinstalar FastAPI si ya está en él.
+
+Diagnóstico sin iniciar el servidor:
+
+```bash
+python -c "import sys, fastapi, uvicorn; print(sys.executable); print(fastapi.__file__); print(uvicorn.__file__)"
+```
+
+Las bibliotecas deben provenir del entorno seleccionado. `hash -r` limpia rutas de ejecutables memorizadas por Bash, pero el comando con `python -m` ya evita depender de la resolución del ejecutable uvicorn. Ejecutar desde backend mantiene la resolución correcta de main.py y DataBase.env.

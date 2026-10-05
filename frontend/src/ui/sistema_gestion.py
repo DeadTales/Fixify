@@ -39,9 +39,12 @@ class SistemaGestion(ttk.Toplevel):
         # permisos: ocultar un botón solo controla la presentación.
         views = available_views(self.role)
 
+        self.nav_buttons = {}
         for label, view_class in views:
-            ttk.Button(sidebar, text=label, bootstyle='secondary',
-                       command=lambda cls=view_class: self.show_view(cls)).pack(fill='x', pady=5)
+            button = ttk.Button(sidebar, text=label, bootstyle='secondary',
+                                command=lambda cls=view_class: self.show_view(cls))
+            button.pack(fill='x', pady=5)
+            self.nav_buttons[view_class] = button
 
         ttk.Button(sidebar, text='Cerrar sesión', bootstyle='danger',
                    command=self.cerrar_sesion).pack(side='bottom', fill='x', pady=10)
@@ -54,10 +57,13 @@ class SistemaGestion(ttk.Toplevel):
     def show_view(self, view_class):
         """view_class: módulo a mostrar; destruye la vista anterior y sus modales."""
 
+        if self.role not in view_class.allowed_roles:
+            return
         if self.view is not None:
             self.view.destroy()
-
         self.view = view_class(self.content, self.services, self.runner, self.role)
+        for cls, button in self.nav_buttons.items():
+            button.configure(bootstyle='primary' if cls == view_class else 'secondary')
         self.view.pack(fill='both', expand=True)
 
     def bring_to_front(self):

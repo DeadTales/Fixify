@@ -11,9 +11,10 @@ class ClientsView(CollectionView):
     menu_label = 'Clientes'
     allowed_roles = ('admin', 'recepcion')
     menu_order = 20
+    editable = True
     service_name = 'clients'
     columns = ('ID', 'Nombre', 'Teléfono', 'Correo')
-   
+
     fields = (
         Field('nombre', 'Nombre completo'),
         Field('telefono', 'Teléfono'),

@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from src.modules.users.model import User
 from src.modules.roles.model import Role
 from src.modules.users.schema import UserCreate
@@ -59,6 +60,28 @@ class UserRepository:
             user.rol = self.get_role(db, nuevo_rol)
             db.commit()
             db.refresh(user)
+        return user
+
+
+    def update(self, db: Session, user_id: int, values):
+        user = db.get(User, user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail='Usuario no encontrado')
+        duplicate = db.query(User.id).filter(
+            User.id != user_id,
+            (User.username == values.username) | (User.correo == values.username)
+        ).first()
+        if duplicate:
+            raise HTTPException(status_code=409, detail='El usuario ya existe.')
+        role = self.get_role(db, values.role)
+        user.username = values.username
+        user.rol = role
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(status_code=409, detail='La cuenta entra en conflicto con otro registro.')
+        db.refresh(user)
         return user
 
 

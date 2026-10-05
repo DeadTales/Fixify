@@ -31,7 +31,7 @@ python -m unittest discover -s frontend/tests -v
 
 El backend incluye GET `/equipos/` y mapea sus columnas al diagrama de BD. Los cambios de rol/actividad requieren autorización vigente en backend; ocultar botones y limpiar JWT local no revoca un token ya emitido.
 
-La [documentación v2](../docs/Documentacion_frontend_v2.ipynb) explica el transporte httpx, los servicios y la integración con asyncio paso a paso.
+La [documentación v2](../docs/Front/Documentacion_frontend_v2.ipynb) explica el transporte httpx, los servicios y la integración con asyncio paso a paso.
 
 
-Para integrar nuevos módulos, consultar [la guía paso a paso](../docs/GUIA_INTEGRACION_MODULOS_FRONTEND.ipynb) y el tutorial del notebook v2.
+Para integrar nuevos módulos, consultar [la guía paso a paso](../docs/Front/GUIA_INTEGRACION_MODULOS_FRONTEND.ipynb) y el tutorial del notebook v2.

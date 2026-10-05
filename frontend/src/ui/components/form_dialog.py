@@ -5,7 +5,7 @@ import ttkbootstrap as ttk
 class FormDialog(ttk.Toplevel):
     """Formulario genérico con validación de campos requeridos y guardado async."""
 
-    def __init__(self, master, title, fields, runner, save, on_saved):
+    def __init__(self, master, title, fields, runner, save, on_saved, initial=None):
         """master: vista; title: título; fields: campos; runner: tareas; save/on_saved: guardar/confirmar."""
         super().__init__(master)
 
@@ -14,7 +14,7 @@ class FormDialog(ttk.Toplevel):
         self.title(title)
         self.resizable(False, False)
 
-        body = ttk.Frame(self, padding=20)
+        body = ttk.Frame(self, padding=28)
         body.pack(fill='both', expand=True)
         ttk.Label(body, text=title, font=('Arial', 14, 'bold')).pack(pady=(0, 15))
 
@@ -32,6 +32,12 @@ class FormDialog(ttk.Toplevel):
             else:
                 widget = ttk.Entry(body, width=40, show='*' if field.secret else '')
 
+            if initial is not None and field.name in initial:
+                value = initial[field.name]
+                if field.choices:
+                    widget.set(value)
+                else:
+                    widget.insert(0, '' if value is None else str(value))
             widget.pack(fill='x', pady=5)
 
             self.inputs[field.name] = widget
@@ -45,7 +51,11 @@ class FormDialog(ttk.Toplevel):
             bootstyle='success',
             command=self._submit,
         )
-        self.button.pack(pady=(10, 0))
+        self.button.pack(fill='x', pady=(10, 0))
+        ttk.Button(body, text='Cancelar', bootstyle='secondary-outline',
+                   command=self.destroy).pack(fill='x', pady=(8, 0))
+        self.bind('<Return>', lambda event: self._submit())
+        self.inputs[fields[0].name].focus_set()
         self.transient(master.winfo_toplevel())
         self.protocol('WM_DELETE_WINDOW', self.destroy)
         self.update_idletasks()
@@ -53,6 +63,9 @@ class FormDialog(ttk.Toplevel):
 
     def _submit(self):
         """Lee controles en Tk; conserva espacios de contraseñas y evita doble envío."""
+
+        if str(self.button['state']) == 'disabled':
+            return
 
         # Las claves Field.name deben coincidir con los argumentos del service.
         # Entry entrega texto: convertir IDs explícitamente antes del service;

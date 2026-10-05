@@ -56,6 +56,6 @@ pnpm build
 
 Las pruebas de consulta no necesitan Meta ni PostgreSQL. La prueba de persistencia requiere una base dedicada y se habilita con CHATBOT_TEST_POSTGRES=1; se omite por defecto. Quedan pendientes pruebas completas por WhatsApp y contra el Backend real. PostgreSQL persiste eventos y contactos; no garantiza conservar todas las capturas pendientes tras reiniciar; la carpeta conserva el nombre de la plantilla postgres por compatibilidad de rutas.
 
-La documentación completa, plan y código explicado están en [Documentacion_chatbot.ipynb](../../docs/Documentacion_chatbot.ipynb). Para instalar desde esta carpeta usa `pnpm --dir .. install --frozen-lockfile`.
+La documentación completa, plan y código explicado están en [Documentacion_chatbot.ipynb](../../docs/Chatbot/Documentacion_chatbot.ipynb). Para instalar desde esta carpeta usa `pnpm --dir .. install --frozen-lockfile`.
 
 Configura también POSTGRES_HOST, POSTGRES_PORT, POSTGRES_USER, POSTGRES_PASSWORD y POSTGRES_DB en .env. Crea previamente el rol y la base dedicada. La guía ampliada de [autenticación y PostgreSQL](../docs/AUTENTICACION_Y_POSTGRESQL.ipynb) explica permisos y límites.
