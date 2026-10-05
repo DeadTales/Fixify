@@ -1,0 +1,6 @@
+packages:
+  - base-ts-meta-postgres
+allowBuilds:
+  esbuild: true
+  sharp: true
+  '@ffmpeg-installer/linux-x64': true

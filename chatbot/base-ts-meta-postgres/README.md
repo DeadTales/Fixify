@@ -1,44 +1,59 @@
-<p align="center">
-  <a href="https://builderbot.app/">
-    <picture>
-      <img src="https://builderbot.app/assets/thumbnail-vector.png" height="80">
-    </picture>
-    <h2 align="center">BuilderBot</h2>
-  </a>
-</p>
+# Chatbot Fixify — flujo modelo con Meta
 
+El ejemplo implementa consulta por folio y sirve como patrón para los demás flujos. Lee el [plan](../docs/PLAN_CHATBOT.ipynb) y el [contrato propuesto](../docs/CONTRATO_API.ipynb). El Backend todavía no tiene el endpoint de consulta: usa `demo` para aprender; `api` requiere implementarlo.
 
+## Ejecutar
 
-<p align="center">
-  <a aria-label="NPM version" href="https://www.npmjs.com/package/@builderbot/bot">
-    <img alt="" src="https://img.shields.io/npm/v/@builderbot/bot?color=%2300c200&label=%40bot-whatsapp">
-  </a>
-  <a aria-label="Join the community on GitHub" href="https://link.codigoencasa.com/DISCORD">
-    <img alt="" src="https://img.shields.io/discord/915193197645402142?logo=discord">
-  </a>
-</p>
+Desde esta carpeta, con Node 22 o superior y dependencias instaladas:
 
-
-## Getting Started
-
-With this library, you can build automated conversation flows agnostic to the WhatsApp provider, set up automated responses for frequently asked questions, receive and respond to messages automatically, and track interactions with customers. Additionally, you can easily set up triggers to expand functionalities limitlessly.
-
-```
-npm create builderbot@latest
+```bash
+cp .env.example .env
+# Completa las variables de Meta y DEMO_PHONE_NUMBER en .env.
+pnpm lint
+pnpm build
+pnpm start
 ```
 
+Para instalar en una copia nueva usa `pnpm install --frozen-lockfile`. Los comandos start/dev cargan `.env` mediante Node. No subas ese archivo a Git. `META_ACCESS_TOKEN` es el token de acceso, `META_PHONE_NUMBER_ID` el identificador del número, `META_VERIFY_TOKEN` el valor que acuerdas para verificar el webhook y `META_API_VERSION` la versión habilitada en tu aplicación; debe completarse explícitamente.
 
-## Documentation
+Configura en Meta la URL pública HTTPS del webhook `/webhook`, el mismo verify token y la suscripción a mensajes. En desarrollo puedes usar un túnel hacia el puerto 3008. Para el número de pruebas de Meta, autoriza el remitente de prueba. Usa el valor exacto que Meta entrega como remitente para `DEMO_PHONE_NUMBER`.
 
-Visit [builderbot](https://builderbot.app/) to view the full documentation.
+Prueba: envía `estado` → `DEMO-001`. Recibirás un resultado marcado **DATOS FICTICIOS**. Otro folio o remitente obtiene la respuesta de verificación fallida. Un formato inválido vuelve a pedir el folio; `cancelar` termina. Al concluir escribe `estado` para empezar otra consulta. No se probaron envíos reales sin tus credenciales.
 
+Para integrar: cambia `CHATBOT_MODE=api`, configura `BACKEND_URL` y `BACKEND_BOT_TOKEN` y proporciona el endpoint del contrato. No hay cambio automático a demo ante errores.
 
-## Official Course
+## Qué hace cada parte del código
 
-If you want to discover all the functions and features offered by the library you can take the course.
-[View Course](https://app.codigoencasa.com/courses/builderbot?refCode=LEIFER)
+| Archivo | Responsabilidad |
+| --- | --- |
+| `src/app.ts` | Compone configuración, Meta, historial temporal, servicio y flujo; inicia HTTP |
+| `src/config.ts` | Exige variables y valida modo/puerto antes de iniciar |
+| `src/flows/consulta.flow.ts` | Define entrada, captura, validación, cancelación y respuestas |
+| `src/services/consultar-servicio.ts` | Tipos públicos, estados, validación, API con timeout y fixture demo |
+| `tests/consulta.test.ts` | Pruebas de privacidad del DTO y comportamiento ante errores HTTP |
 
+Cada bloque tiene comentarios de propósito. `addKeyword` activa el flujo, `addAnswer` presenta el mensaje; `capture: true` espera la siguiente respuesta. `ctx.body` es el mensaje y `ctx.from` el remitente. `fallBack` repite la captura, `endFlow` termina la conversación. El servicio se inyecta: el diálogo no necesita conocer la implementación HTTP ni una base de datos. No se guarda folio en estado porque este ejemplo resuelve la consulta en una sola captura.
 
-## Contact Us
-- [💻 Discord](https://link.codigoencasa.com/DISCORD)
-- [👌 𝕏 (Twitter)](https://twitter.com/leifermendez)
+## Cómo desarrollar el siguiente flujo
+
+1. Elige una HU y escribe entradas, salidas y criterios de aceptación (por ejemplo HU-22 para FAQ).
+2. Acuerda el contrato con Backend; no inventes horarios, precios ni diagnósticos.
+3. Crea `src/services/preguntas-frecuentes.ts` con un resultado tipado y tratamiento de errores.
+4. Crea `src/flows/preguntas-frecuentes.flow.ts` exportando una fábrica como `crearFlujoConsulta`. Usa palabras propias como `preguntas` para evitar conflictos.
+5. Inyecta el servicio desde `app.ts` y agrega el flujo a `createFlow([...])`.
+6. Para varios pasos, usa `state.update`/`state.get`, valida cada captura y limpia sólo los datos de ese flujo al concluir o cancelar. Define caducidad e intentos antes de captar datos sensibles.
+7. Documenta HU/RF, contrato, conversación válida y fallida; prueba respuestas desconocidas, caída del Backend y contenido no autorizado.
+
+Para avisos de equipo listo se necesita un evento del Backend y un servicio de envío, no una captura de folio. Programa recordatorios en Backend con control de duplicados y periodos configurables.
+
+## Verificación
+
+```bash
+pnpm test
+pnpm lint
+pnpm build
+```
+
+Estas pruebas no necesitan Meta ni PostgreSQL. Quedan pendientes pruebas completas por WhatsApp y contra el Backend real. MemoryDB pierde historial al reiniciar; la carpeta conserva el nombre de la plantilla postgres por compatibilidad de rutas.
+
+La documentación completa, plan y código explicado están en [Documentacion_chatbot.ipynb](../../docs/Documentacion_chatbot.ipynb). Para instalar desde esta carpeta usa `pnpm --dir .. install --frozen-lockfile`.

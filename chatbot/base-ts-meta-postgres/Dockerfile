@@ -1,40 +1,15 @@
-# Image size ~ 400MB
-FROM node:21-alpine3.18 as builder
-
+# Build from chatbot/: docker build -f base-ts-meta-postgres/Dockerfile -t fixify-chatbot .
+FROM node:22-bookworm-slim
 WORKDIR /app
-
-RUN corepack enable && corepack prepare pnpm@latest --activate
-ENV PNPM_HOME=/usr/local/bin
-
-COPY . .
-
-COPY package*.json *-lock.yaml ./
-
-RUN apk add --no-cache --virtual .gyp \
-        python3 \
-        make \
-        g++ \
-    && apk add --no-cache git \
-    && pnpm install && pnpm run build \
-    && apk del .gyp
-
-FROM node:21-alpine3.18 as deploy
-
-WORKDIR /app
-
-ARG PORT
-ENV PORT $PORT
-EXPOSE $PORT
-
-COPY --from=builder /app/assets ./assets
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/*.json /app/*-lock.yaml ./
-
-RUN corepack enable && corepack prepare pnpm@latest --activate 
-ENV PNPM_HOME=/usr/local/bin
-
-RUN npm cache clean --force && pnpm install --production --ignore-scripts \
-    && addgroup -g 1001 -S nodejs && adduser -S -u 1001 nodejs \
-    && rm -rf $PNPM_HOME/.npm $PNPM_HOME/.node-gyp
-
-CMD ["npm", "start"]
+RUN corepack enable && corepack prepare pnpm@12.9.1 --activate
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY base-ts-meta-postgres/package.json ./base-ts-meta-postgres/package.json
+RUN pnpm install --frozen-lockfile
+COPY base-ts-meta-postgres/src ./base-ts-meta-postgres/src
+COPY base-ts-meta-postgres/tsconfig.json base-ts-meta-postgres/rollup.config.js ./base-ts-meta-postgres/
+RUN pnpm build
+ENV PORT=3008
+EXPOSE 3008
+WORKDIR /app/base-ts-meta-postgres
+# Supply environment variables at runtime; no secrets copied into the image.
+CMD ["node", "dist/app.js"]

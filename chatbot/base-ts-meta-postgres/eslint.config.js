@@ -1,4 +1,5 @@
 import tseslint from 'typescript-eslint'
+import { fixupPluginRules } from '@eslint/compat'
 import builderbot from 'eslint-plugin-builderbot'
 
 export default [
@@ -8,7 +9,7 @@ export default [
     ...tseslint.configs.recommended,
     {
         plugins: {
-            builderbot,
+            builderbot: fixupPluginRules(builderbot),
         },
         languageOptions: {
             ecmaVersion: 'latest',

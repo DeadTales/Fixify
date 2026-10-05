@@ -1,36 +1,42 @@
 {
-  "name": "base-bailey-json",
+  "name": "fixify-chatbot-meta",
   "version": "1.0.0",
-  "description": "",
+  "description": "Chatbot Fixify con BuilderBot y Meta",
   "main": "dist/app.js",
   "type": "module",
   "scripts": {
-    "start": "node ./dist/app.js",
-    "lint": "eslint . --no-ignore",
-    "dev": "npm run lint && nodemon --signal SIGKILL  ./src/app.ts",
-    "build": "npx rollup -c"
+    "start": "node --env-file=.env ./dist/app.js",
+    "lint": "eslint .",
+    "dev": "pnpm lint && node --env-file=.env --import tsx --watch ./src/app.ts",
+    "build": "rollup -c",
+    "test": "tsx --test tests/*.test.ts"
   },
   "keywords": [],
   "dependencies": {
     "@builderbot/bot": "1.4.2",
-    "@builderbot/provider-meta": "1.4.2",
-    "@builderbot/database-postgres": "1.4.2"
+    "@builderbot/provider-meta": "1.4.2"
   },
   "devDependencies": {
+    "@eslint/compat": "^1.2.0",
+    "@rollup/plugin-typescript": "^12.3.0",
     "@types/node": "^25.0.0",
-    "typescript-eslint": "^8.0.0",
     "eslint": "^9.0.0",
     "eslint-plugin-builderbot": "latest",
-    "rollup": "^4.10.0",
     "nodemon": "^3.1.11",
-    "rollup-plugin-typescript2": "^0.36.0",
+    "rollup": "^4.10.0",
+    "tslib": "^2.8.1",
     "tsx": "^4.7.1",
-    "typescript": "^5.4.3"
+    "typescript": "^5.4.3",
+    "typescript-eslint": "^8.0.0"
   },
   "author": "",
   "license": "ISC",
   "allowScripts": {
     "sharp@0.33.3": true,
     "esbuild@0.28.2": true
+  },
+  "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=22"
   }
 }

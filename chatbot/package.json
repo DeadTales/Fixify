@@ -4,18 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "pnpm --filter fixify-chatbot-meta test",
+    "lint": "pnpm --filter fixify-chatbot-meta lint",
+    "build": "pnpm --filter fixify-chatbot-meta build",
+    "dev": "pnpm --filter fixify-chatbot-meta dev",
+    "start": "pnpm --filter fixify-chatbot-meta start"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "12.6.0",
-      "onFail": "download"
-    }
-  },
-  "packageManager": "pnpm@12.6.0",
+  "packageManager": "pnpm@12.9.1",
   "type": "module"
 }
