@@ -7,6 +7,7 @@ from src.modules.roles.model import Role
 
 class User(Base):
     __tablename__ = 'usuarios'
+    __table_args__ = {'extend_existing': True}
     id = Column('id_usuario', Integer, primary_key=True, autoincrement=True)
     id_rol = Column(Integer, ForeignKey('roles.id_rol'), nullable=True)
     username = Column('nombre', String(150), nullable=False)

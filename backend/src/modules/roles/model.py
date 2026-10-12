@@ -6,6 +6,7 @@ from src.database.conexion import Base
 
 class Role(Base):
     __tablename__ = 'roles'
+    __table_args__ = {'extend_existing': True}
     id = Column('id_rol', Integer, primary_key=True, autoincrement=True)
     nombre_rol = Column(String(50), nullable=False)
 

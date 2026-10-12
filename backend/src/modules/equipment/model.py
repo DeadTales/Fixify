@@ -3,6 +3,7 @@ from src.database.conexion import Base
 
 class Equipment(Base):
     __tablename__ = "equipos"
+    __table_args__ = {'extend_existing': True}
 
     # Conservamos los atributos de la API y usamos los nombres físicos del diagrama.
     id = Column("id_equipo", Integer, primary_key=True, index=True, autoincrement=True)
