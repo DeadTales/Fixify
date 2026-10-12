@@ -17,6 +17,12 @@ class UserRepository:
         """db: sesión actual; devuelve cuentas ordenadas por ID."""
         return db.query(User).order_by(User.id).all()
 
+from sqlalchemy.orm import Session
+from fastapi import HTTPException
+from src.modules.users.model import User, Role # Ajusta los imports según tus rutas reales
+
+class UserRepository:
+    
     def get_role(self, db: Session, code: str):
         """Localiza la etiqueta SQL que representa el rol de dominio."""
         role = next((role for role in db.query(Role).order_by(Role.id).all() if role.code == code), None)
@@ -24,8 +30,15 @@ class UserRepository:
             raise HTTPException(status_code=409, detail='El rol solicitado no existe en el catálogo roles.')
         return role
 
+    def get_technicians(self, db: Session):
+        """Filtra y devuelve únicamente a los usuarios que tienen el rol de técnico."""
+        # 1. Obtenemos el objeto rol usando tu método existente (asumiendo que el código es 'tecnico')
+        rol_tecnico = self.get_role(db, code="tecnico")
+        
+        # 2. Consultamos los usuarios que coincidan con ese id_rol de la base de datos
+        return db.query(User).filter(User.id_rol == rol_tecnico.id).all()
+
     def create(self, db: Session, user_in: UserCreate):
-        """user_in: credenciales y rol; guarda hash y FK, nunca contraseña plana."""
         if self.get_by_username(db, user_in.username):
             raise HTTPException(status_code=409, detail='El usuario ya existe.')
         db_user = User(username=user_in.username, hashed_password=get_password_hash(user_in.password),
