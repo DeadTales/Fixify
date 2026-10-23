@@ -5,7 +5,9 @@ from src.modules.users.model import User
 from src.modules.roles.model import Role
 from src.modules.users.schema import UserCreate
 from src.shared.security import get_password_hash
-
+from sqlalchemy.orm import Session
+from fastapi import HTTPException
+from src.modules.users.model import User, Role # Ajusta los imports según tus rutas reales
 
 class UserRepository:
     """Persistencia de usuarios y catálogo de roles; cada cambio confirma la sesión."""
@@ -16,12 +18,6 @@ class UserRepository:
     def get_all(self, db: Session):
         """db: sesión actual; devuelve cuentas ordenadas por ID."""
         return db.query(User).order_by(User.id).all()
-
-from sqlalchemy.orm import Session
-from fastapi import HTTPException
-from src.modules.users.model import User, Role # Ajusta los imports según tus rutas reales
-
-class UserRepository:
     
     def get_role(self, db: Session, code: str):
         """Localiza la etiqueta SQL que representa el rol de dominio."""
