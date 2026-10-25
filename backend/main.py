@@ -12,7 +12,7 @@ from src.modules.clients.router import router as clients_router
 from src.modules.equipment.router import router as equipment_router
 from src.modules.service_orders.router import router as orders_router
 from src.modules.diagnostics.router import router as diagnostics_router
-
+from src.modules.inventory.router import router as inventory_router 
 
 # Registra entidades de mantenimiento; no crea tablas ni migra al importar.
 from src.database import domain_models
@@ -34,6 +34,7 @@ app.include_router(clients_router)
 app.include_router(equipment_router)
 app.include_router(orders_router)
 app.include_router(diagnostics_router)
+app.include_router(inventory_router)
 # --- ENDPOINTS GLOBALES ---
 @app.get("/")
 def root():

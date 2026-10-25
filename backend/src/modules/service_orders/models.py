@@ -38,6 +38,10 @@ class ServiceActivityModel(Base):
     solucion = Column(Text, nullable=False)
     fecha_registro = Column(DateTime(timezone=True), server_default=func.now())
     
+from sqlalchemy import Column, Integer, DateTime, ForeignKey
+from sqlalchemy.sql import func
+from src.database.conexion import Base
+
 class ConsumoMaterialModel(Base):
     __tablename__ = "consumos_material"
     __table_args__ = {'extend_existing': True}
@@ -46,3 +50,5 @@ class ConsumoMaterialModel(Base):
     id_orden = Column(Integer, ForeignKey("ordenes_servicio.id_orden"), nullable=False)
     id_material = Column(Integer, ForeignKey("materiales.id_material"), nullable=False)
     cantidad_utilizada = Column(Integer, nullable=False)
+    id_usuario = Column(Integer, ForeignKey("usuarios.id_usuario"), nullable=True)
+    fecha_movimiento = Column(DateTime(timezone=True), server_default=func.now())
