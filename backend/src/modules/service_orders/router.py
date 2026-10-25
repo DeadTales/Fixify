@@ -3,6 +3,9 @@ from sqlalchemy.orm import Session
 from src.database.conexion import get_db
 from src.modules.service_orders.schema import OrderCreate, OrderResponse
 from src.modules.service_orders.repository import service_order_repository
+from src.modules.service_orders.schema import ActivityCreate, ActivityResponse
+from src.modules.service_orders.schema import ConsumoMaterialCreate, ConsumoMaterialResponse
+from src.modules.service_orders.schema import OrderResolutionUpdate, OrderResponse
 
 router = APIRouter(
     prefix="/ordenes",
@@ -56,4 +59,103 @@ def obtener_detalle_orden(id_orden: int, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"No se pudo obtener el detalle de la orden: {str(e)}"
+        )
+@router.post("/{id_orden}/actividades", response_model=ActivityResponse, status_code=status.HTTP_201_CREATED)
+def registrar_actividad(id_orden: int, activity_data: ActivityCreate, db: Session = Depends(get_db)):
+    """Registra el trabajo realizado y la solución de mantenimiento en la orden."""
+    try:
+        return service_order_repository.add_activity(db, id_orden, activity_data)
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No se pudo registrar la actividad: {str(e)}"
+        )
+
+@router.get("/{id_orden}/actividades", response_model=list[ActivityResponse])
+def listar_actividades(id_orden: int, db: Session = Depends(get_db)):
+    """Obtiene todas las actividades de mantenimiento registradas para una orden."""
+    try:
+        return service_order_repository.get_activities_by_order(db, id_orden)
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No se pudieron obtener las actividades: {str(e)}"
+        )
+@router.post("/{id_orden}/consumos", response_model=ConsumoMaterialResponse, status_code=status.HTTP_201_CREATED)
+def registrar_consumo_material(id_orden: int, consumo_data: ConsumoMaterialCreate, db: Session = Depends(get_db)):
+    """Registra un material o refacción utilizada en la orden de servicio."""
+    try:
+        return service_order_repository.add_material_consumption(db, id_orden, consumo_data)
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No se pudo registrar el consumo de material: {str(e)}"
+        )
+
+@router.get("/{id_orden}/consumos", response_model=list[ConsumoMaterialResponse])
+def listar_consumos_material(id_orden: int, db: Session = Depends(get_db)):
+    """Obtiene los consumos de materiales registrados para una orden de servicio."""
+    try:
+        return service_order_repository.get_material_consumptions_by_order(db, id_orden)
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No se pudieron obtener los consumos de material: {str(e)}"
+        )
+@router.patch("/{id_orden}/resolver", response_model=OrderResponse)
+def registrar_solucion_orden(
+    id_orden: int, 
+    resolution_data: OrderResolutionUpdate, 
+    db: Session = Depends(get_db)
+):
+    """Registra la causa, las acciones realizadas y concluye el estado de la orden."""
+    try:
+        return service_order_repository.resolve_order(db, id_orden, resolution_data)
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No se pudo registrar la solución de la orden: {str(e)}"
+        )
+@router.patch("/{id_orden}/resolver", response_model=OrderResponse)
+def registrar_solucion_orden(
+    id_orden: int, 
+    resolution_data: OrderResolutionUpdate, 
+    db: Session = Depends(get_db)
+):
+    """Registra la causa, las acciones realizadas y concluye el estado de la orden."""
+    try:
+        return service_order_repository.resolve_order(db, id_orden, resolution_data)
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No se pudo registrar la solución de la orden: {str(e)}"
+        )
+@router.patch("/{id_orden}/entregar", response_model=OrderResponse)
+def emitir_evidencia_entrega(id_orden: int, db: Session = Depends(get_db)):
+    """Registra la entrega final de la orden, fija la fecha de entrega y emite la evidencia de cierre."""
+    try:
+        return service_order_repository.deliver_order(db, id_orden)
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No se pudo emitir la evidencia de entrega: {str(e)}"
         )

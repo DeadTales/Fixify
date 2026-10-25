@@ -8,6 +8,9 @@ from src.modules.service_orders.models import StatusHistoryModel
 from src.modules.clients.model import Client
 from src.modules.equipment.model import Equipment
 from src.modules.users.model import User  # <-- Importamos el modelo de usuario para validar al técnico
+from src.modules.service_orders.models import ConsumoMaterialModel
+from src.modules.service_orders.schema import ConsumoMaterialCreate
+from src.modules.service_orders.schema import OrderResolutionUpdate, OrderResponse
 
 # Definición estricta del ciclo de vida y orden permitido de avance
 VALID_TRANSITIONS = {
@@ -199,9 +202,100 @@ class ServiceOrderRepository:
         
         # Consultar el historial de estados de esta orden para la trazabilidad
         historial = db.query(StatusHistoryModel).filter(StatusHistoryModel.id_orden == id_orden).all()
-        
+
+    
         return {
             "orden": db_order,
             "historial": historial
+    
         }
+    def add_material_consumption(self, db: Session, id_orden: int, consumo_data: ConsumoMaterialCreate) -> ConsumoMaterialModel:
+        """Registra el consumo de un material o refacción en la orden de servicio."""
+        db_order = db.query(ServiceOrderModel).filter(ServiceOrderModel.id_orden == id_orden).first()
+        if not db_order:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="La orden de servicio especificada no existe."
+            )
+
+        db_consumo = ConsumoMaterialModel(
+            id_orden=id_orden,
+            id_material=consumo_data.id_material,
+            cantidad_utilizada=consumo_data.cantidad_utilizada
+        )
+        db.add(db_consumo)
+        db.commit()
+        db.refresh(db_consumo)
+        
+        return db_consumo
+
+    def get_material_consumptions_by_order(self, db: Session, id_orden: int):
+        """Obtiene el listado de materiales consumidos en una orden de servicio."""
+        db_order = db.query(ServiceOrderModel).filter(ServiceOrderModel.id_orden == id_orden).first()
+        if not db_order:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="La orden de servicio especificada no existe."
+            )
+        
+        return db.query(ConsumoMaterialModel).filter(ConsumoMaterialModel.id_orden == id_orden).all()
+
+    def resolve_order(self, db: Session, id_orden: int, resolution: OrderResolutionUpdate) -> ServiceOrderModel:
+        """Registra la causa, acciones y el estado final de la orden de servicio."""
+        db_order = db.query(ServiceOrderModel).filter(ServiceOrderModel.id_orden == id_orden).first()
+        if not db_order:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="La orden de servicio especificada no existe."
+            )
+
+        estado_actual = db_order.estado
+        nuevo_estado = resolution.estado_final
+
+        estados_permitidos = VALID_TRANSITIONS.get(estado_actual, [])
+        if nuevo_estado not in estados_permitidos and nuevo_estado != estado_actual:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"El estado final '{nuevo_estado}' no es una transición válida desde '{estado_actual}'."
+            )
+
+        # Actualizar campos de resolución mapeando a 'acciones'
+        db_order.causa = resolution.causa
+        db_order.acciones = resolution.acciones
+        db_order.estado = nuevo_estado
+
+        if nuevo_estado == "Entregado" and not db_order.fecha_entrega:
+            db_order.fecha_entrega = func.now()
+
+        db.commit()
+        db.refresh(db_order)
+        
+        return db_order
+    def deliver_order(self, db: Session, id_orden: int) -> ServiceOrderModel:
+        """Marca la orden como 'Entregado', registra la fecha de entrega y emite la evidencia de cierre."""
+        db_order = db.query(ServiceOrderModel).filter(ServiceOrderModel.id_orden == id_orden).first()
+        if not db_order:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="La orden de servicio especificada no existe."
+            )
+
+        estado_actual = db_order.estado
+        estados_permitidos = VALID_TRANSITIONS.get(estado_actual, [])
+        
+        if "Entregado" not in estados_permitidos and estado_actual != "Entregado":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"No se puede entregar la orden desde el estado actual '{estado_actual}'. Debe estar completada o lista."
+            )
+
+        db_order.estado = "Entregado"
+        if not db_order.fecha_entrega:
+            db_order.fecha_entrega = func.now()
+
+        db.commit()
+        db.refresh(db_order)
+        
+        return db_order
+
 service_order_repository = ServiceOrderRepository()
