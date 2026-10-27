@@ -61,6 +61,17 @@ class FormDialog(ttk.Toplevel):
         self.update_idletasks()
         self.place_window_center()
 
+    def set_choices(self, field_name, choices):
+        """Actualiza un Combobox dependiente y conserva su valor si sigue válido."""
+
+        widget = self.inputs[field_name]
+        choices = tuple(choices)
+        current = widget.get()
+        widget.configure(values=choices)
+        if current not in choices:
+            widget.set(choices[0] if choices else '')
+        return bool(choices)
+
     def _submit(self):
         """Lee controles en Tk; conserva espacios de contraseñas y evita doble envío."""
 

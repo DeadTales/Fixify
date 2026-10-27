@@ -28,32 +28,34 @@ class DashboardView(AsyncFrame):
         self.metrics = {}
         self.queries = []
 
+        self.queries = [
+            ('Órdenes', services.orders.listar),
+            ('Materiales', services.inventory.listar),
+        ]
+
         if role in ('admin', 'recepcion'):
-            self.queries = [
+            self.queries.extend([
                 ('Equipos', services.equipment.listar),
                 ('Clientes', services.clients.listar),
-            ]
+            ])
 
         if role == 'admin':
             self.queries.append(('Usuarios', services.users.listar))
 
         for index, (label, _) in enumerate(self.queries):
             card = ttk.Labelframe(cards, text=label, padding=15)
-            card.grid(row=0, column=index, sticky='nsew', padx=5)
-            cards.columnconfigure(index, weight=1)
+            row, column = divmod(index, 3)
+            card.grid(row=row, column=column, sticky='nsew', padx=5, pady=5)
+            cards.columnconfigure(column, weight=1)
 
             metric = ttk.Label(card, text='…', font=('Arial', 22, 'bold'))
             metric.pack()
 
             self.metrics[label] = metric
 
-        if not self.queries:
-            self.status.configure(text='Sesión de técnico activa. El módulo de órdenes asignadas está pendiente.')
-            return
-
         self.table = create_table(
             self,
-            ('Folio', 'Tipo', 'Marca', 'Modelo', 'Problema', 'ID Cliente'),
+            ('Folio', 'Estado', 'ID Cliente', 'ID Equipo', 'ID Técnico', 'Recepción'),
             height=8,
         )
         self.request(self._fetch, on_success=self._loaded)
@@ -78,22 +80,23 @@ class DashboardView(AsyncFrame):
 
             self.metrics[label].configure(text=str(len(result)))
 
-            if label == 'Equipos':
-                for equipment in sorted(result, key=lambda eq: eq.id, reverse=True)[:8]:
+            if label == 'Órdenes':
+                for order in sorted(result, key=lambda item: item.id_orden, reverse=True)[:8]:
                     self.table.insert(
                         '',
                         'end',
                         values=(
-                            f"EQ-{equipment.id:03d}",
-                            equipment.tipo,
-                            equipment.marca,
-                            equipment.modelo,
-                            equipment.problema_reportado,
-                            equipment.client_id,
+                            order.folio or f'ORD-{order.id_orden:03d}',
+                            order.estado,
+                            order.id_cliente,
+                            order.id_equipo,
+                            order.id_tecnico or 'Sin asignar',
+                            order.fecha_recepcion[:16].replace('T', ' ')
+                            if order.fecha_recepcion else '-',
                         ),
                     )
 
-        self.status.configure(text='\n'.join(errors) or 'Datos actualizados. Equipos ordenados por ID descendente.')
+        self.status.configure(text='\n'.join(errors) or 'Datos actualizados. Órdenes recientes primero.')
 
     def _failed(self, error):
         """error: fallo general del dashboard; mantiene la ventana utilizable."""

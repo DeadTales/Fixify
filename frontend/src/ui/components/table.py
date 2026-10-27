@@ -19,8 +19,21 @@ COLUMN_WIDTHS = {
     'Nº Serie': 190,
     'Problema': 360,
     'ID Cliente': 120,
+    'ID Equipo': 110,
+    'ID Técnico': 115,
+    'Descripción': 300,
+    'Unidad': 110,
+    'Existencia': 110,
+    'Mínimo': 100,
+    'Material': 100,
+    'Fecha': 155,
+    'Recepción': 155,
+    'Entrega': 155,
 }
-CENTERED_COLUMNS = {'ID', 'Folio', 'ID Cliente', 'Estado'}
+CENTERED_COLUMNS = {
+    'ID', 'Folio', 'ID Cliente', 'ID Equipo', 'ID Técnico', 'Estado',
+    'Existencia', 'Mínimo', 'Material',
+}
 
 
 def create_table(parent, columns, height=12):

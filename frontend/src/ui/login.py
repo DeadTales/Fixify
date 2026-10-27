@@ -11,9 +11,9 @@ class VentanaLogin(ttk.Window):
 
     def __init__(self, services=None):
         """services: contenedor opcional para inyectar una API de pruebas."""
-        super().__init__(title='Fixify — Iniciar sesión', themename='litera', size=(450, 460))
-        self.geometry('450x610')
+        super().__init__(title='Fixify — Iniciar sesión', themename='litera', size=(480, 640))
         self.style.configure('TButton', padding=(14, 9))
+        self.style.configure('Login.TEntry', padding=(10, 8), font=('Segoe UI', 10))
         self.style.configure('Treeview', rowheight=34, font=('DejaVu Sans', 10))
         self.style.configure('Treeview.Heading', font=('DejaVu Sans', 10, 'bold'), padding=10)
         set_window_icon(self)
@@ -24,46 +24,118 @@ class VentanaLogin(ttk.Window):
         self.resizable(False, False)
         self.protocol('WM_DELETE_WINDOW', self.cerrar_aplicacion)
         self.crear_widgets()
+        self._fit_to_content()
         self.place_window_center()
 
     def crear_widgets(self):
         """Construye campos con etiquetas estables y feedback de conexión."""
 
-        body = ttk.Frame(self, padding=35)
+        accent = ttk.Frame(self, height=6, bootstyle='primary')
+        accent.pack(fill='x')
+        accent.pack_propagate(False)
+
+        body = ttk.Frame(self, padding=(42, 18, 42, 16))
         body.pack(fill='both', expand=True)
 
         # Tk requiere una referencia a la imagen mientras el widget esté visible.
-        self.logo = load_logo(self, (140, 140))
-        ttk.Label(body, image=self.logo).pack(pady=(0, 20))
-        ttk.Label(body, text='Bienvenido a Fixify', font=('DejaVu Sans', 20, 'bold')).pack(pady=(0, 6))
-        ttk.Label(body, text='Gestiona clientes y equipos desde un solo lugar.',
-                  bootstyle='secondary', wraplength=370).pack(pady=(0, 20))
-        ttk.Label(body, text='Usuario').pack(anchor='w')
+        self.logo = load_logo(self, (108, 108))
+        ttk.Label(body, image=self.logo).pack(pady=(0, 8))
+        ttk.Label(
+            body,
+            text='Bienvenido a Fixify',
+            font=('Segoe UI', 22, 'bold'),
+        ).pack(pady=(0, 4))
+        ttk.Label(
+            body,
+            text='Administra servicios, reparaciones e inventario.',
+            bootstyle='secondary',
+            font=('Segoe UI', 10),
+            justify='center',
+            wraplength=360,
+        ).pack(pady=(0, 16))
 
-        self.entry_usuario = ttk.Entry(body)
-        self.entry_usuario.pack(fill='x', pady=(5, 15))
-        ttk.Label(body, text='Contraseña').pack(anchor='w')
+        form = ttk.Frame(body)
+        form.pack(fill='x')
 
-        self.entry_password = ttk.Entry(body, show='*')
-        self.entry_password.pack(fill='x', pady=5)
+        ttk.Label(form, text='Usuario', font=('Segoe UI', 10, 'bold')).pack(anchor='w')
+
+        self.entry_usuario = ttk.Entry(form, style='Login.TEntry')
+        self.entry_usuario.pack(fill='x', pady=(4, 12))
+        ttk.Label(form, text='Contraseña', font=('Segoe UI', 10, 'bold')).pack(anchor='w')
+
+        self.entry_password = ttk.Entry(form, show='*', style='Login.TEntry')
+        self.entry_password.pack(fill='x', pady=(4, 5))
+
+        options = ttk.Frame(form)
+        options.pack(fill='x')
         self.show_password = ttk.BooleanVar(value=False)
-        ttk.Checkbutton(body, text='Mostrar contraseña', variable=self.show_password,
-                        command=lambda: self.entry_password.configure(
-                            show='' if self.show_password.get() else '*')).pack(anchor='w', pady=5)
+        ttk.Checkbutton(
+            options,
+            text='Mostrar contraseña',
+            variable=self.show_password,
+            command=lambda: self.entry_password.configure(
+                show='' if self.show_password.get() else '*'
+            ),
+        ).pack(side='left')
+        ttk.Button(
+            options,
+            text='¿Olvidaste tu contraseña?',
+            bootstyle='link',
+            command=self.mostrar_recuperacion,
+        ).pack(side='right')
         self.entry_usuario.focus_set()
 
-        self.status = ttk.Label(body, text='', wraplength=370)
-        self.status.pack(fill='x', pady=10)
+        self.status = ttk.Label(
+            form,
+            text='',
+            bootstyle='secondary',
+            justify='left',
+            wraplength=380,
+        )
+        self.status.pack(fill='x', pady=(8, 5))
 
         self.button = ttk.Button(
-            body,
+            form,
             text='Iniciar sesión',
+            bootstyle='primary',
             command=self.verificar_login,
         )
-        self.button.pack(fill='x', pady=10)
-        ttk.Button(body, text='¿Olvidaste tu contraseña?', bootstyle='link',
-                   command=self.mostrar_recuperacion).pack()
+        self.button.pack(fill='x', pady=(0, 11))
+
+        divider = ttk.Frame(form)
+        divider.pack(fill='x', pady=(0, 10))
+        ttk.Separator(divider).pack(side='left', fill='x', expand=True, padx=(0, 10))
+        ttk.Label(
+            divider,
+            text='ACCESO PARA CLIENTES',
+            bootstyle='secondary',
+            font=('Segoe UI', 8, 'bold'),
+        ).pack(side='left')
+        ttk.Separator(divider).pack(side='left', fill='x', expand=True, padx=(10, 0))
+
+        ttk.Button(
+            form,
+            text='Consultar mi reparación',
+            bootstyle='primary-outline',
+            command=self.mostrar_consulta,
+        ).pack(fill='x')
+
+        ttk.Label(
+            body,
+            text='Sistema de gestión de mantenimiento',
+            bootstyle='secondary',
+            font=('Segoe UI', 8),
+        ).pack(side='bottom', pady=(12, 0))
         self.bind('<Return>', lambda event: self.verificar_login())
+
+    def _fit_to_content(self):
+        """Ajusta la ventana al contenido sin rebasar el área visible."""
+
+        self.update_idletasks()
+        screen_margin = 80
+        width = min(max(480, self.winfo_reqwidth()), self.winfo_screenwidth() - screen_margin)
+        height = min(max(620, self.winfo_reqheight()), self.winfo_screenheight() - screen_margin)
+        self.geometry(f'{width}x{height}')
 
     def verificar_login(self):
         """Valida presencia; preserva contraseña y evita solicitudes repetidas."""
@@ -75,11 +147,14 @@ class VentanaLogin(ttk.Window):
         password = self.entry_password.get()
 
         if not username or not password:
-            self.status.configure(text='Complete usuario y contraseña.')
+            self.status.configure(
+                text='Complete usuario y contraseña.',
+                bootstyle='warning',
+            )
             return
 
         self.button.configure(state='disabled')
-        self.status.configure(text='Conectando…')
+        self.status.configure(text='Verificando credenciales…', bootstyle='secondary')
         self.runner.submit(self.services.auth.login(username, password), self,
                            lambda data: self._logged_in(username, data), self._failed)
 
@@ -113,7 +188,7 @@ class VentanaLogin(ttk.Window):
             return
 
         self.entry_password.delete(0, 'end')
-        self.status.configure(text='')
+        self.status.configure(text='', bootstyle='secondary')
         self.button.configure(state='normal')
         self.withdraw()
         # Dar foco después de ocultar login y de que Tk procese la nueva ventana.
@@ -121,7 +196,7 @@ class VentanaLogin(ttk.Window):
 
     def _failed(self, error):
         """error: fallo de login; deja corregir credenciales o reintentar."""
-        self.status.configure(text=str(error))
+        self.status.configure(text=str(error), bootstyle='danger')
         self.button.configure(state='normal')
 
     def mostrar_recuperacion(self):
@@ -133,6 +208,12 @@ class VentanaLogin(ttk.Window):
             parent=self,
         )
 
+    def mostrar_consulta(self):
+        """Abre la consulta pública usando el mismo transporte asíncrono."""
+        from ui.consultation import ConsultationDialog
+
+        ConsultationDialog(self, self.services.consultation, self.runner)
+
     def cerrar_aplicacion(self):
         """Cancela tareas y cierra HTTP antes de destruir la ventana principal."""
 
@@ -142,5 +223,5 @@ class VentanaLogin(ttk.Window):
         self._closing = True
         self.services.api.set_token(None)
         self.button.configure(state='disabled')
-        self.status.configure(text='Cerrando…')
+        self.status.configure(text='Cerrando…', bootstyle='secondary')
         self.runner.close(self.services.api.aclose(), self.destroy)
